@@ -235,6 +235,10 @@
       display: inline;
     }
 
+    .mobile-break {
+      display: none;
+    }
+
     .main {
       width: min(1080px, calc(100% - 44px));
       margin: 0 auto;
@@ -704,7 +708,8 @@
       }
 
       .hero p {
-        font-size: 15px;
+        font-size: 13.5px;
+        line-height: 1.55;
       }
 
       .hero-actions {
@@ -730,6 +735,10 @@
 
       .desktop-break {
         display: none;
+      }
+
+      .mobile-break {
+        display: block;
       }
 
       .tool-grid,
@@ -862,9 +871,9 @@
       <div class="about-visual" aria-hidden="true"></div>
       <div class="about-copy">
         <h2 id="about-title">안녕하세요, 미네바니예요 👋🏻</h2>
-        <p>미네바니 로그는 기록을 통해 나를 돌보는 하루를 만들어가기 위한 기록 도구 모음입니다.</p>
-        <p>여러 도구를 써보다가 가장 필요한 기능만 담아 직접 만들게 되었고, 지금은 저와 같은 고민을 가진 분들과 함께 나누고 싶어<br class="desktop-break" /> 이 공간을 만들었어요.</p>
-        <p>이곳에서 자신만의 속도로 하루를 정리하고, 생각을 모으고, 삶의 흐름을 기록해보세요.</p>
+        <p>미네바니 로그는 기록을 통해 나를 돌보는 하루를<br class="mobile-break" />만들어가기 위한 기록 도구 모음입니다.</p>
+        <p>여러 도구를 써보다가 가장 필요한 기능만 담아<br class="mobile-break" />직접 만들게 되었고, 지금은 저와 같은 고민을<br class="mobile-break" />가진 분들과 함께 나누고 싶어<br class="desktop-break" /> 이 공간을 만들었어요.</p>
+        <p>이곳에서 자신만의 속도로 하루를 정리하고,<br class="mobile-break" />생각을 모으고, 삶의 흐름을 기록해보세요.</p>
         <p>당신의 하루도 이곳에서 조금 더 가벼워지길 바라요. ✨</p>
       </div>
     </section>
