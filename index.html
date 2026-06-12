@@ -319,6 +319,15 @@
       line-height: 1.15;
     }
 
+    .tool-card.coming-soon {
+      justify-content: center;
+    }
+
+    .tool-card.coming-soon h3 {
+      margin: 0;
+      color: #758097;
+    }
+
     .tool-card p {
       max-width: 235px;
       margin: 0 auto 10px;
@@ -402,6 +411,24 @@
       color: var(--navy);
       font-size: 14px;
       font-weight: 750;
+    }
+
+    .privacy-copy {
+      margin: 0 0 14px;
+      padding: 16px 18px;
+      border-left: 3px solid var(--gold);
+      color: #465269;
+      background: rgba(255, 250, 240, 0.72);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .privacy-copy p {
+      margin: 0;
+    }
+
+    .privacy-copy p + p {
+      margin-top: 7px;
     }
 
     .feature {
@@ -798,38 +825,35 @@
           rel="noopener noreferrer"
           aria-label="Save Log 사용하기"
         >
-          <div class="icon-circle" aria-hidden="true">💰</div>
+          <div class="icon-circle" aria-hidden="true">🗄️</div>
           <h3>Save Log</h3>
-          <p>지출을 기록하고 소비 패턴을 한눈에 확인해요.</p>
+          <p>링크와 메모를 저장하고,<br />필요할 때 다시 꺼내보세요.</p>
           <span class="small-btn">사용하기 →</span>
         </a>
 
-        <article class="tool-card">
-          <div class="icon-circle" aria-hidden="true">☁️</div>
-          <h3>Emotion Log</h3>
-          <p>오늘의 감정을 기록하고 나를 더 이해하는 시간을 가져요.</p>
-          <a class="small-btn" href="#">사용하기 →</a>
-        </article>
-
-        <article class="tool-card">
-          <div class="icon-circle" aria-hidden="true">⚡</div>
-          <h3>Energy Log</h3>
-          <p>에너지 흐름을 기록하고 나에게 맞는 루틴을 찾아가요.</p>
-          <a class="small-btn" href="#">사용하기 →</a>
-        </article>
-
-        <article class="tool-card">
-          <div class="icon-circle" aria-hidden="true">💊</div>
-          <h3>ADHD Med Log</h3>
-          <p>복약 기록과 컨디션 변화를 함께 관리해요.</p>
-          <a class="small-btn" href="#">사용하기 →</a>
-        </article>
-
-        <article class="tool-card">
-          <div class="icon-circle" aria-hidden="true">📘</div>
+        <a
+          class="tool-card"
+          href="https://minnebonnie.github.io/tools/booklist/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Book List 사용하기"
+        >
+          <div class="icon-circle" aria-hidden="true">📚</div>
           <h3>Book List</h3>
-          <p>읽고 싶은 책, 읽은 책을 기록하고 정리해요.</p>
-          <a class="small-btn" href="#">사용하기 →</a>
+          <p>나만의 서재를 채우고,<br />오래 남을 문장을 기록해요.</p>
+          <span class="small-btn">사용하기 →</span>
+        </a>
+
+        <article class="tool-card coming-soon">
+          <h3>To be Continued</h3>
+        </article>
+
+        <article class="tool-card coming-soon">
+          <h3>To be Continued</h3>
+        </article>
+
+        <article class="tool-card coming-soon">
+          <h3>To be Continued</h3>
         </article>
       </div>
     </section>
@@ -845,14 +869,19 @@
       </div>
     </section>
 
-    <span class="privacy-policy-link">Privacy Policy</span>
+    <section id="privacy" aria-labelledby="privacy-title">
+      <span class="privacy-policy-link" id="privacy-title">Privacy Policy</span>
+      <div class="privacy-copy">
+        <p>본 사이트는 사용자의 기록 데이터를 별도 서버로 전송하거나 저장하지 않습니다. 모든 기록은 사용 중인 기기의 브라우저 내 Local Storage에 저장되며, 브라우저 데이터 삭제 시 함께 삭제될 수 있습니다.</p>
+        <p>본 사이트는 Google AdSense를 통해 광고를 제공할 수 있습니다. Google을 포함한 광고 제공업체는 쿠키를 사용하여 방문 정보를 바탕으로 맞춤형 광고를 제공할 수 있습니다.</p>
+      </div>
 
-    <section class="feature-row" id="privacy" aria-label="서비스 특징">
+      <div class="feature-row" aria-label="서비스 특징">
       <div class="feature">
         <div class="feature-icon" aria-hidden="true">🛡️</div>
         <div>
           <h3>개인 정보 보호</h3>
-          <p>모든 데이터는 내 브라우저에만 저장되어 안전해요.</p>
+          <p>기록은 별도 서버가 아닌 내 브라우저에 저장돼요.</p>
         </div>
       </div>
 
@@ -878,6 +907,7 @@
           <h3>광고 최소화</h3>
           <p>기록에 집중할 수 있도록 깔끔한 환경을 제공해요.</p>
         </div>
+      </div>
       </div>
     </section>
   </main>
