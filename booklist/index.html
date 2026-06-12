@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>바니의 독서기록장 📖</title>
+    <title>독서기록장 📖</title>
     
     <link rel="shortcut icon" href="icon.png" type="image/x-icon">
     <link rel="icon" href="icon.png" type="image/png">
@@ -190,7 +190,7 @@
                     </div>
                     <div>
                         <label style="font-size: 0.85rem; font-weight: bold; color: #666; margin-bottom: 8px; display: block;">2. 마음에 콕 박힌 글귀 붙여넣기</label>
-                        <textarea id="transInput" placeholder="복사한 문장을 통째로 편하게 붙여넣어 봐 바니! 📄" style="height: 100px; margin-bottom: 0; background: #fff; border: 1px solid #ddd;"></textarea>
+                        <textarea id="transInput" placeholder="복사한 문장을 통째로 편하게 붙여넣어 봐! 📄" style="height: 100px; margin-bottom: 0; background: #fff; border: 1px solid #ddd;"></textarea>
                     </div>
                 </div>
                 <div style="text-align: right; margin-top: 15px;">
@@ -233,8 +233,8 @@
                 <div class="status-opt" data-val="done" onclick="setStatus('done')">완독</div>
                 <div class="status-opt" data-val="giveup" onclick="setStatus('giveup')">중도포기</div>
             </div>
-            <label style="font-size: 0.8rem; font-weight: 800; color: #555; margin-bottom: 8px; display: block;">바니의 한 줄 평 💭</label>
-            <textarea id="modalReview" placeholder="이 책은 바니에게 어떤 의미였어?"></textarea>
+            <label style="font-size: 0.8rem; font-weight: 800; color: #555; margin-bottom: 8px; display: block;">한 줄 평 💭</label>
+            <textarea id="modalReview" placeholder="이 책은 너에게 어떤 의미였어?"></textarea>
             <label style="font-size: 0.8rem; font-weight: 800; color: #555; margin-bottom: 8px; display: block;">마음에 콕 박힌 문장 필사 📝</label>
             <textarea id="modalQuote" placeholder="잊고 싶지 않은 소중한 문장을 남겨줘" style="border-left: 4px solid var(--primary);"></textarea>
             <button class="save-btn" onclick="saveBookDetail()">소중한 기록 저장하기 💜</button>
@@ -294,7 +294,7 @@
 
     function addBook() {
         const title = document.getElementById('newBookTitle').value.trim();
-        if(!title) return alert("책 제목을 입력해줘 바니!");
+        if(!title) return alert("책 제목을 입력해줘!");
         books.unshift({ id: Date.now(), title, cover: selectedFileData || DEFAULT_COVER, rating: 0, status: 'reading', review: '', quote: '' });
         save();
         document.getElementById('newBookTitle').value = '';
@@ -328,7 +328,7 @@
         const bookId = parseInt(document.getElementById('transBookSelect').value);
         const text = document.getElementById('transInput').value.trim();
         
-        if(!bookId) return alert("필사할 책을 목록에서 먼저 선택해줘 바니! 📚");
+        if(!bookId) return alert("필사할 책을 목록에서 먼저 선택해줘! 📚");
         if(!text) return alert("필사할 아름다운 구절을 입력해줘! 📄");
 
         const selectedBook = books.find(b => b.id === bookId);
@@ -361,7 +361,7 @@
     }
 
     function deleteTrans(id) {
-        if(!confirm("이 필사 로그를 정말로 지울까 바니?")) return;
+        if(!confirm("이 필사 로그를 정말로 지울까?")) return;
         transcriptions = transcriptions.filter(t => t.id !== id);
         save(); renderTranscriptions();
     }
@@ -436,7 +436,7 @@
                     <button class="trans-icon-btn" onclick="deleteTrans(${t.id})" title="삭제" style="color:#ef476f;">🗑️</button>
                 </div>
             </div>
-        `).join('') || '<p style="text-align:center; color:#ccc; font-size:0.9rem; padding:40px; grid-column: 1/-1;">해당 조건에 만족하는 필사 로그가 비어있어 바니! ✍️</p>';
+        `).join('') || '<p style="text-align:center; color:#ccc; font-size:0.9rem; padding:40px; grid-column: 1/-1;">해당 조건에 만족하는 필사 로그가 비어있어! ✍️</p>';
     }
 
     function renderAll() {
@@ -461,7 +461,7 @@
                     <div class="book-rating-display">${getStars(b.rating)}</div>
                 </div>
             </div>
-        `).join('') || '<p style="text-align:center; color:#ccc; font-size:0.8rem; padding:20px;">필터에 맞는 책이 없어 바니! 📚</p>';
+        `).join('') || '<p style="text-align:center; color:#ccc; font-size:0.8rem; padding:20px;">필터에 맞는 책이 없어! 📚</p>';
         
         const selectBox = document.getElementById('transBookSelect');
         if(selectBox) {
@@ -594,7 +594,7 @@
                 const incoming = JSON.parse(ev.target.result);
                 
                 if(importMode === 'overwrite') {
-                    if(!confirm("⚠️ 경고: 정말 기존 서재 기록을 전부 지우고 파일 안의 데이터로 싹 복구할까 바니?")) return;
+                    if(!confirm("⚠️ 경고: 정말 기존 서재 기록을 전부 지우고 파일 안의 데이터로 싹 복구할까?")) return;
                     books = incoming.books || [];
                     readings = incoming.readings || [];
                     transcriptions = incoming.transcriptions || [];
@@ -622,7 +622,7 @@
                         }
                     });
 
-                    alert("🎉 흩어져있던 기존 데이터와 새 데이터를 하나로 안전하게 합쳤어 바니!");
+                    alert("🎉 흩어져있던 기존 데이터와 새 데이터를 하나로 안전하게 합쳤어!");
                 }
 
                 save(); 
