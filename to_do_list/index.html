@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/records/todo_list/icon.png">
 <link rel="icon" type="image/png" href="/records/todo_list/icon.png">
 
-<title>바니의 투두리스트</title>
+<title>투두리스트</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
@@ -409,7 +409,7 @@ input[type="text"] {
         <div class="card">
             <h2 class="someday-title">🕶️ 나중에 할 일</h2>
             <div style="display:flex; gap:5px; margin-bottom:15px;">
-                <input type="text" id="somedayInput" style="flex:1; padding:10px; border-radius:10px; border:1px solid #eee; font-size:0.85rem;" placeholder="나중에 쿨하게 처리할 일!">
+                <input type="text" id="somedayInput" style="flex:1; padding:10px; border-radius:10px; border:1px solid #eee; font-size:0.85rem;" placeholder="나중에 처리할 일!">
                 <button onclick="addSomeday()" style="background:var(--someday); color:white; border:none; border-radius:10px; padding:0 12px; font-size:0.85rem; cursor:pointer;">등록</button>
             </div>
             <div id="somedayList"></div>
@@ -521,7 +521,7 @@ function renderSomeday() {
             <span class="someday-text">${escapeHtml(s.text)}</span>
             <button class="del-btn" onclick="deleteSomeday(${s.id})">🗑️</button>
         </div>
-    `).join('') || '<div style="text-align:center; color:#ccc; font-size:0.75rem;">나중에 할 일을 쿨하게 적어봐!</div>';
+    `).join('') || '<div style="text-align:center; color:#ccc; font-size:0.75rem;">나중에 할 일을 적어봐!</div>';
 }
 
 function exportData() {
