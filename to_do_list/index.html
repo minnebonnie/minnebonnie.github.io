@@ -499,44 +499,274 @@ input[type="text"] {
 @media (max-width: 900px) {
     .dashboard {
         grid-template-columns: 1fr;
+        max-width: 720px;
     }
 
     .weekly-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(7, minmax(210px, 72vw));
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        overscroll-behavior-x: contain;
+        padding: 2px 2px 10px;
+        scrollbar-width: thin;
     }
 
     .day-column {
         min-height: 120px;
+        scroll-snap-align: start;
     }
 }
 
 @media (max-width: 520px) {
     body {
-        padding: 10px;
-        padding-top: max(10px, env(safe-area-inset-top));
-        padding-bottom: max(10px, env(safe-area-inset-bottom));
+        padding: 8px;
+        padding-top: max(8px, env(safe-area-inset-top));
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+        overflow-x: hidden;
+    }
+
+    button,
+    input {
+        min-height: 44px;
+    }
+
+    input[type="text"] {
+        min-width: 0;
+        font-size: 16px !important;
+    }
+
+    .dashboard {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+    }
+
+    .left-panel,
+    .right-panel {
+        display: contents;
+    }
+
+    .todo-entry-card { order: 1; }
+    .daily-card { order: 2; }
+    .weekly-card { order: 3; }
+    .monthly-card { order: 4; }
+    .backup-zone { order: 5; }
+    .someday-card { order: 6; }
+
+    .todo-entry-card,
+    .daily-card,
+    .weekly-card,
+    .monthly-card,
+    .someday-card,
+    .backup-zone {
+        width: 100%;
     }
 
     .card {
-        padding: 16px;
-        border-radius: 20px;
+        padding: 14px;
+        border-radius: 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.045);
+    }
+
+    h2 {
+        font-size: 0.98rem;
+        padding-bottom: 11px;
+        margin-bottom: 12px;
+    }
+
+    .entry-row {
+        gap: 7px !important;
+    }
+
+    .entry-row button {
+        flex: 0 0 auto;
+        padding: 0 15px !important;
+    }
+
+    .date-controller {
+        display: grid;
+        grid-template-columns: 44px minmax(112px, 1fr) 44px 52px;
+        gap: 6px;
+    }
+
+    .date-controller .date-picker-wrapper {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-self: center;
+        min-height: 32px;
+        margin-top: -2px;
+    }
+
+    .date-controller .nav-btn,
+    .date-controller .today-btn {
+        padding: 0;
+        width: 100%;
+    }
+
+    .date-controller .today-btn {
+        grid-column: 4;
+        grid-row: 1;
+    }
+
+    .current-date-text {
+        min-width: 0;
+        font-size: 1.05rem;
+    }
+
+    #datePicker {
+        width: 44px;
+        height: 32px;
+    }
+
+    .cal-icon {
+        font-size: 1.25rem;
+    }
+
+    .todo-item {
+        min-height: 48px;
+        padding: 8px 3px;
+        font-size: 0.9rem;
+    }
+
+    .todo-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        min-height: 20px;
+        flex: 0 0 auto;
+    }
+
+    .todo-text {
+        margin-left: 9px;
+    }
+
+    .del-btn {
+        min-width: 40px;
+        min-height: 40px;
+        padding: 0;
+    }
+
+    .backup-zone {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-bottom: 10px;
+        padding: 8px;
+    }
+
+    .backup-btn {
+        min-width: 0;
+        padding: 7px 4px;
+        font-size: 0.7rem;
+    }
+
+    .year-view-btn {
+        grid-column: 1 / -1;
+        margin-top: 0;
     }
 
     .weekly-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(7, minmax(230px, 82vw));
+        gap: 8px;
+        margin: 0 -4px;
+        padding-inline: 4px;
+    }
+
+    .day-column {
+        min-height: 132px;
+        padding: 10px;
+        border-radius: 12px;
+    }
+
+    .day-header {
+        position: sticky;
+        left: 0;
+        font-size: 0.82rem;
     }
 
     .calendar-grid {
-        gap: 4px;
+        gap: 3px;
     }
 
     .cal-day {
-        min-height: 70px;
-        padding: 5px;
+        position: relative;
+        min-width: 0;
+        min-height: 51px;
+        padding: 5px 3px;
+        border-radius: 8px;
+    }
+
+    .cal-num {
+        margin-bottom: 3px;
+        font-size: 0.72rem;
     }
 
     .cal-content {
-        font-size: 0.58rem;
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        margin: 1px;
+        border-radius: 50%;
+        background: #d97a7a;
+        color: transparent;
+        font-size: 0;
+        vertical-align: top;
+        text-decoration: none;
+    }
+
+    .cal-content.done {
+        background: var(--primary);
+        color: transparent !important;
+    }
+
+    .month-label {
+        font-size: 1rem;
+        margin-left: 4px;
+    }
+
+    .someday-item {
+        min-height: 48px;
+        padding: 8px 10px;
+    }
+
+    .year-modal {
+        padding: 0;
+        background: #fff;
+    }
+
+    .year-panel {
+        min-height: 100vh;
+        padding: max(10px, env(safe-area-inset-top)) 8px max(10px, env(safe-area-inset-bottom));
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .year-header {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        margin: 0 -8px 10px;
+        padding: 0 8px 10px;
+        background: #fff;
+    }
+
+    .year-title {
+        font-size: 1.05rem;
+        white-space: nowrap;
+    }
+
+    .year-actions {
+        flex-wrap: nowrap;
+    }
+
+    .year-board-wrap {
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+    }
+
+    .year-board {
+        min-width: 1080px;
     }
 }
 </style>
@@ -546,15 +776,15 @@ input[type="text"] {
 
 <div class="dashboard">
     <div class="left-panel">
-        <div class="card">
+        <div class="card todo-entry-card">
             <h2>✍️ 할 일 기록</h2>
-            <div style="display:flex; gap:8px;">
+            <div class="entry-row" style="display:flex; gap:8px;">
                 <input type="text" id="todoInput" style="flex:1; padding:12px; border-radius:12px; border:1px solid #eee; font-size:0.95rem;" placeholder="기록해볼까?">
                 <button onclick="addTodo()" style="background:var(--primary); color:white; border:none; border-radius:12px; padding:0 15px; font-weight:bold; cursor:pointer;">추가</button>
             </div>
         </div>
 
-        <div class="card">
+        <div class="card daily-card">
             <div class="date-controller">
                 <button class="nav-btn" onclick="changeDate(-1)">◀</button>
                 <span id="targetDateText" class="current-date-text"></span>
@@ -578,9 +808,9 @@ input[type="text"] {
             <button class="backup-btn year-view-btn" onclick="openYearView()">🗓️ 1년 한눈에 보기</button>
         </div>
 
-        <div class="card">
+        <div class="card someday-card">
             <h2 class="someday-title">🕶️ 나중에 할 일</h2>
-            <div style="display:flex; gap:5px; margin-bottom:15px;">
+            <div class="entry-row" style="display:flex; gap:5px; margin-bottom:15px;">
                 <input type="text" id="somedayInput" style="flex:1; padding:10px; border-radius:10px; border:1px solid #eee; font-size:0.85rem;" placeholder="나중에 쿨하게 처리할 일!">
                 <button onclick="addSomeday()" style="background:var(--someday); color:white; border:none; border-radius:10px; padding:0 12px; font-size:0.85rem; cursor:pointer;">등록</button>
             </div>
@@ -589,12 +819,12 @@ input[type="text"] {
     </div>
 
     <div class="right-panel">
-        <div class="card">
+        <div class="card weekly-card">
             <h2>🗓️ 이번 주 대쉬보드</h2>
             <div class="weekly-grid" id="weeklyGrid"></div>
         </div>
 
-        <div class="card">
+        <div class="card monthly-card">
             <h2>🌙 월간 캘린더 <span id="calendarMonthLabel" class="month-label"></span></h2>
             <div class="calendar-grid" id="calendarGrid"></div>
         </div>
