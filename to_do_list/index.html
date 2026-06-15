@@ -202,6 +202,24 @@ input[type="text"] {
     flex: 1;
 }
 
+.someday-order-actions {
+    display: none;
+}
+
+.order-btn {
+    background: #f3efff;
+    color: var(--someday);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 900;
+}
+
+.order-btn:disabled {
+    opacity: 0.25;
+    cursor: default;
+}
+
 .todo-item {
     display: flex;
     align-items: center;
@@ -667,57 +685,68 @@ input[type="text"] {
     }
 
     .weekly-grid {
-        grid-template-columns: repeat(7, minmax(230px, 82vw));
+        grid-template-columns: 1fr;
         gap: 8px;
-        margin: 0 -4px;
-        padding-inline: 4px;
+        margin: 0;
+        padding: 0;
+        overflow-x: visible;
+        scroll-snap-type: none;
     }
 
     .day-column {
-        min-height: 132px;
+        min-height: 88px;
         padding: 10px;
         border-radius: 12px;
+        scroll-snap-align: none;
     }
 
     .day-header {
-        position: sticky;
-        left: 0;
         font-size: 0.82rem;
     }
 
     .calendar-grid {
-        gap: 3px;
+        grid-template-columns: 1fr;
+        gap: 7px;
     }
 
     .cal-day {
-        position: relative;
         min-width: 0;
-        min-height: 51px;
-        padding: 5px 3px;
-        border-radius: 8px;
+        min-height: 58px;
+        padding: 9px 10px;
+        border-radius: 10px;
+    }
+
+    .cal-day.calendar-empty {
+        display: none;
     }
 
     .cal-num {
-        margin-bottom: 3px;
-        font-size: 0.72rem;
+        margin-bottom: 6px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 0.8rem;
     }
 
     .cal-content {
-        display: inline-block;
-        width: 5px;
-        height: 5px;
-        margin: 1px;
-        border-radius: 50%;
-        background: #d97a7a;
-        color: transparent;
-        font-size: 0;
-        vertical-align: top;
-        text-decoration: none;
+        display: block;
+        width: auto;
+        height: auto;
+        margin: 0 0 4px;
+        border-radius: 0;
+        background: transparent;
+        color: #d97a7a;
+        font-size: 0.76rem;
+        line-height: 1.4;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        word-break: break-word;
+        text-decoration: line-through;
     }
 
     .cal-content.done {
-        background: var(--primary);
-        color: transparent !important;
+        background: transparent;
+        color: #333 !important;
     }
 
     .month-label {
@@ -728,6 +757,26 @@ input[type="text"] {
     .someday-item {
         min-height: 48px;
         padding: 8px 10px;
+        cursor: default;
+        gap: 6px;
+    }
+
+    .someday-order-actions {
+        display: flex;
+        gap: 4px;
+        margin-left: auto;
+    }
+
+    .order-btn {
+        width: 36px;
+        min-width: 36px;
+        min-height: 38px;
+        padding: 0;
+        font-size: 0.8rem;
+    }
+
+    .someday-item .del-btn {
+        margin-left: 0;
     }
 
     .year-modal {
@@ -893,7 +942,7 @@ function normalizeData() {
 
 function initSortable() {
     const el = document.getElementById('somedayList');
-    if (!el || !window.Sortable) return;
+    if (!el || !window.Sortable || window.matchMedia('(max-width: 520px)').matches) return;
 
     Sortable.create(el, {
         animation: 150,
@@ -931,12 +980,29 @@ function deleteSomeday(id) {
     renderSomeday();
 }
 
+function moveSomeday(id, direction) {
+    const currentIndex = somedayList.findIndex(s => Number(s.id) === Number(id));
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= somedayList.length) return;
+
+    [somedayList[currentIndex], somedayList[nextIndex]] =
+        [somedayList[nextIndex], somedayList[currentIndex]];
+
+    save();
+    renderSomeday();
+}
+
 function renderSomeday() {
     const list = document.getElementById('somedayList');
 
-    list.innerHTML = somedayList.map(s => `
+    list.innerHTML = somedayList.map((s, index) => `
         <div class="someday-item" data-id="${s.id}">
             <span class="someday-text">${escapeHtml(s.text)}</span>
+            <div class="someday-order-actions">
+                <button class="order-btn" onclick="moveSomeday(${s.id}, -1)" ${index === 0 ? 'disabled' : ''} aria-label="위로 이동">▲</button>
+                <button class="order-btn" onclick="moveSomeday(${s.id}, 1)" ${index === somedayList.length - 1 ? 'disabled' : ''} aria-label="아래로 이동">▼</button>
+            </div>
             <button class="del-btn" onclick="deleteSomeday(${s.id})">🗑️</button>
         </div>
     `).join('') || '<div style="text-align:center; color:#ccc; font-size:0.75rem;">나중에 할 일을 쿨하게 적어봐!</div>';
@@ -1212,7 +1278,7 @@ function renderAll() {
     const lastDay = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
 
     for (let i = 0; i < firstDay.getDay(); i++) {
-        calendarGrid.innerHTML += `<div class="cal-day" style="background:#f0f2f5; border:none;"></div>`;
+        calendarGrid.innerHTML += `<div class="cal-day calendar-empty" style="background:#f0f2f5; border:none;"></div>`;
     }
 
     for (let i = 1; i <= lastDay.getDate(); i++) {
