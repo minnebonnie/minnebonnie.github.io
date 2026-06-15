@@ -79,21 +79,6 @@ button, input, textarea {
     letter-spacing:-0.05em;
 }
 
-.brand {
-    display:flex;
-    align-items:center;
-    gap:12px;
-}
-
-.logo-icon {
-    width:50px;
-    height:50px;
-    flex-shrink:0;
-    border-radius:16px;
-    object-fit:cover;
-    box-shadow:0 7px 18px rgba(212, 163, 28, 0.18);
-}
-
 .logo span {
     color:var(--primary-dark);
 }
@@ -574,12 +559,6 @@ button, input, textarea {
         flex-direction:column;
     }
 
-    .logo-icon {
-        width:44px;
-        height:44px;
-        border-radius:14px;
-    }
-
     .layout {
         grid-template-columns:1fr;
     }
@@ -624,12 +603,9 @@ button, input, textarea {
 <body>
 <div class="app">
     <header class="topbar">
-        <div class="brand">
-            <img class="logo-icon" src="./icon.png" alt="Morning Pages 로고">
-            <div>
-                <div class="logo">Morning <span>Pages</span> ☀️✨</div>
-                <div class="sub">매일 아침 눈부신 햇살과 함께 머릿속을 맑게 비워내는 의식</div>
-            </div>
+        <div>
+            <div class="logo">Morning <span>Pages</span> ☀️✨</div>
+            <div class="sub">매일 아침 눈부신 햇살과 함께 머릿속을 맑게 비워내는 의식</div>
         </div>
 
         <div class="btn-row">
