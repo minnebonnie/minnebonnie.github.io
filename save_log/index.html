@@ -335,6 +335,17 @@ h1 {
     word-break: break-all;
 }
 
+.saved-photo {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    max-height: 420px;
+    margin: 0 0 12px;
+    border-radius: 16px;
+    object-fit: contain;
+    background: #f3f4f6;
+}
+
 .tag-row {
     display: flex;
     flex-wrap: wrap;
@@ -421,6 +432,77 @@ h1 {
     box-shadow: 0 -4px 20px rgba(0,0,0,0.07);
 }
 
+.photo-btn {
+    width: 38px;
+    flex: 0 0 38px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: #858a93;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.photo-btn:hover,
+.photo-btn:focus-visible {
+    background: #f0f2f5;
+    color: var(--primary);
+    outline: none;
+}
+
+.photo-btn svg {
+    width: 23px;
+    height: 23px;
+    display: block;
+}
+
+.selected-photo {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 8px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    background: white;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+}
+
+.selected-photo.show {
+    display: flex;
+}
+
+.selected-photo img {
+    width: 54px;
+    height: 54px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: #f3f4f6;
+}
+
+.selected-photo-name {
+    flex: 1;
+    min-width: 0;
+    color: var(--sub);
+    font-size: 0.78rem;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.selected-photo-remove {
+    border: none;
+    border-radius: 10px;
+    padding: 7px 9px;
+    background: #f0f2f5;
+    color: var(--danger);
+    font-weight: 800;
+    cursor: pointer;
+}
+
 #quickInput {
     flex: 1;
     border: none;
@@ -488,7 +570,7 @@ h1 {
         </div>
 
         <div class="hint">
-            엔터 = 저장 / Shift + 엔터 = 줄바꿈<br>
+            전송 버튼 = 저장 / 엔터 = 줄바꿈<br>
             <strong>병합</strong>은 기존 기록을 살리고 백업 파일 기록을 합쳐줘. <strong>덮어쓰기</strong>는 현재 기록을 백업 파일로 교체해.
         </div>
     </div>
@@ -498,12 +580,23 @@ h1 {
 </div>
 
 <div class="input-area">
+    <div class="selected-photo" id="selectedPhoto">
+        <img id="selectedPhotoPreview" alt="선택한 사진 미리보기">
+        <div class="selected-photo-name" id="selectedPhotoName"></div>
+        <button class="selected-photo-remove" type="button" onclick="clearSelectedPhoto()">취소</button>
+    </div>
     <div class="input-inner">
+        <button class="photo-btn" type="button" aria-label="사진 추가" title="사진 추가" onclick="document.getElementById('photoInput').click()">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 5.5h16v13H4z M7 15l3.2-3.2 2.5 2.5 1.8-1.8L18 16 M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
         <textarea id="quickInput" placeholder="링크나 내용을 적어줘!"></textarea>
         <button class="send-btn" onclick="quickAdd()">전송</button>
     </div>
 </div>
 
+<input type="file" id="photoInput" accept="image/*" onchange="selectPhoto(event)" hidden>
 <input type="file" id="importMergeInput" accept=".json" onchange="mergeData(event)">
 <input type="file" id="importOverwriteInput" accept=".json" onchange="overwriteData(event)">
 
@@ -511,18 +604,19 @@ h1 {
 const KEY = 'Bunny_SaveLog_Chat_v3';
 let items = JSON.parse(localStorage.getItem(KEY) || '[]');
 let currentView = 'all';
+let selectedPhotoData = '';
+let selectedPhotoFileName = '';
 
 const quickInput = document.getElementById('quickInput');
 
-quickInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        quickAdd();
-    }
-});
-
 function saveToLocal() {
-    localStorage.setItem(KEY, JSON.stringify(items));
+    try {
+        localStorage.setItem(KEY, JSON.stringify(items));
+        return true;
+    } catch (err) {
+        alert('사진을 저장할 공간이 부족해. 오래된 사진 기록을 정리하거나 백업한 뒤 다시 시도해줘.');
+        return false;
+    }
 }
 
 function formatDate(date) {
@@ -648,16 +742,18 @@ async function makePreview(content) {
 
 async function quickAdd() {
     const content = quickInput.value.trim();
-    if (!content) return;
+    if (!content && !selectedPhotoData) return;
 
     const now = new Date();
-    const preview = await makePreview(content);
+    const preview = content ? await makePreview(content) : null;
 
     const newItem = {
         id: Date.now(),
         content: content,
         tags: extractTags(content),
         preview: preview,
+        photo: selectedPhotoData || null,
+        photoName: selectedPhotoFileName || '',
         createdAt: now.toISOString(),
         dateText: formatDate(now),
         updatedAt: null,
@@ -668,10 +764,95 @@ async function quickAdd() {
     };
 
     items.unshift(newItem);
-    saveToLocal();
+    if (!saveToLocal()) {
+        items.shift();
+        return;
+    }
 
     quickInput.value = '';
+    clearSelectedPhoto();
     renderItems();
+}
+
+async function selectPhoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        alert('사진 파일만 추가할 수 있어!');
+        event.target.value = '';
+        return;
+    }
+
+    try {
+        selectedPhotoData = await compressPhoto(file);
+        selectedPhotoFileName = file.name;
+        document.getElementById('selectedPhotoPreview').src = selectedPhotoData;
+        document.getElementById('selectedPhotoName').textContent = file.name;
+        document.getElementById('selectedPhoto').classList.add('show');
+    } catch (err) {
+        alert('사진을 불러오지 못했어. 다른 사진으로 다시 시도해줘.');
+        clearSelectedPhoto();
+    }
+}
+
+function clearSelectedPhoto() {
+    selectedPhotoData = '';
+    selectedPhotoFileName = '';
+    document.getElementById('selectedPhotoPreview').removeAttribute('src');
+    document.getElementById('selectedPhotoName').textContent = '';
+    document.getElementById('selectedPhoto').classList.remove('show');
+    document.getElementById('photoInput').value = '';
+}
+
+function compressPhoto(file) {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        const objectUrl = URL.createObjectURL(file);
+
+        image.onload = function() {
+            URL.revokeObjectURL(objectUrl);
+
+            let width = image.naturalWidth;
+            let height = image.naturalHeight;
+            const maxSide = 1280;
+
+            if (Math.max(width, height) > maxSide) {
+                const ratio = maxSide / Math.max(width, height);
+                width = Math.round(width * ratio);
+                height = Math.round(height * ratio);
+            }
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            let quality = 0.78;
+            let dataUrl = '';
+
+            for (let attempt = 0; attempt < 6; attempt++) {
+                canvas.width = width;
+                canvas.height = height;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(image, 0, 0, width, height);
+                dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                if (dataUrl.length <= 700000) break;
+
+                width = Math.max(1, Math.round(width * 0.85));
+                height = Math.max(1, Math.round(height * 0.85));
+                quality = Math.max(0.5, quality - 0.06);
+            }
+
+            resolve(dataUrl);
+        };
+
+        image.onerror = function() {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error('image load failed'));
+        };
+
+        image.src = objectUrl;
+    });
 }
 
 function setView(view) {
@@ -692,6 +873,8 @@ function normalizeOldItems() {
         if (item.pinned === undefined) { item.pinned = false; changed = true; }
         if (item.lastViewedAt === undefined) { item.lastViewedAt = null; changed = true; }
         if (item.viewCount === undefined) { item.viewCount = 0; changed = true; }
+        if (item.photo === undefined) { item.photo = null; changed = true; }
+        if (item.photoName === undefined) { item.photoName = ''; changed = true; }
         return item;
     });
 
@@ -714,6 +897,8 @@ async function normalizeImportedItems(importedItems) {
             content: content,
             tags: item.tags && Array.isArray(item.tags) ? item.tags : extractTags(content),
             preview: preview,
+            photo: item.photo || null,
+            photoName: item.photoName || '',
             createdAt: item.createdAt || baseDate.toISOString(),
             dateText: item.dateText || item.date || formatDate(baseDate),
             updatedAt: item.updatedAt || null,
@@ -759,6 +944,8 @@ function mergeTwoItems(existing, incoming) {
         content: base.content || existing.content || incoming.content || '',
         tags: mergedTags,
         preview: base.preview || existing.preview || incoming.preview || null,
+        photo: base.photo || existing.photo || incoming.photo || null,
+        photoName: base.photoName || existing.photoName || incoming.photoName || '',
         createdAt: existing.createdAt && incoming.createdAt
             ? (new Date(existing.createdAt) <= new Date(incoming.createdAt) ? existing.createdAt : incoming.createdAt)
             : (existing.createdAt || incoming.createdAt),
@@ -928,7 +1115,9 @@ function renderItems() {
 
                 ${renderPreview(item)}
 
-                <div class="content">${linkify(item.content || '')}</div>
+                ${item.photo ? `<img class="saved-photo" src="${escapeHtml(item.photo)}" alt="${escapeHtml(item.photoName || '저장한 사진')}">` : ''}
+
+                ${item.content ? `<div class="content">${linkify(item.content)}</div>` : ''}
 
                 ${tags.length ? `
                     <div class="tag-row">
@@ -945,7 +1134,7 @@ function renderItems() {
 
                 <div class="edit-area" id="edit-${item.id}">
                     <textarea id="edit-content-${item.id}" placeholder="내용 수정">${escapeHtml(item.content || '')}</textarea>
-                    <input id="edit-tags-${item.id}" type="text" placeholder="#태그 #저장 #나중에보기" value="${escapeHtml(tags.join(' '))}">
+                    <input id="edit-tags-${item.id}" type="text" placeholder="태그를 쓰고 스페이스바를 눌러줘" value="${escapeHtml(tags.join(' '))}" oninput="autoFormatTags(this)">
                     <button class="edit-save-btn" onclick="saveEdit(${item.id})">수정 저장하기</button>
                 </div>
             </div>
@@ -959,12 +1148,28 @@ function toggleEdit(id) {
     area.style.display = area.style.display === 'block' ? 'none' : 'block';
 }
 
+function formatTagWords(value) {
+    return String(value || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(word => word.startsWith('#') ? word : `#${word}`)
+        .join(' ');
+}
+
+function autoFormatTags(input) {
+    if (!/\s$/.test(input.value)) return;
+    input.value = `${formatTagWords(input.value)} `;
+}
+
 async function saveEdit(id) {
     const item = items.find(i => i.id === id);
     if (!item) return;
 
     const content = document.getElementById(`edit-content-${id}`).value.trim();
-    const tagInput = document.getElementById(`edit-tags-${id}`).value.trim();
+    const tagField = document.getElementById(`edit-tags-${id}`);
+    const tagInput = formatTagWords(tagField.value);
+    tagField.value = tagInput;
 
     if (!content) {
         alert('내용이 비어있으면 저장할 수 없어!');
