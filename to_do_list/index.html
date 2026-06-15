@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-   <link rel="apple-touch-icon" sizes="180x180" href="/records/to_do_list/icon1.png">
-<link rel="icon" type="image/png" href="/records/to_do_list/icon1.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#28a745">
@@ -14,7 +12,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/records/todo_list/icon.png">
 <link rel="icon" type="image/png" href="/records/todo_list/icon.png">
 
-<title>투두리스트</title>
+<title>투두리스트 ✅</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
@@ -298,7 +296,8 @@ input[type="text"] {
 
 .cal-content {
     font-size: 0.65rem;
-    color: #555;
+    color: #d97a7a; /* 톤다운된 빨간색 */
+    text-decoration: line-through;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -307,10 +306,9 @@ input[type="text"] {
 }
 
 .cal-content.done {
-    text-decoration: line-through;
-    color: var(--done-blue) !important;
-    font-weight: 400;
-    opacity: 0.8;
+    text-decoration: none;
+    color: #333 !important; /* 검은색 */
+    font-weight: 600;
 }
 
 .month-label {
@@ -318,6 +316,178 @@ input[type="text"] {
     font-size: 1.2rem;
     font-weight: 900;
     margin-left: 10px;
+}
+
+
+
+.year-view-btn {
+    width: 100%;
+    margin-top: 10px;
+    background: #eefaf1;
+    color: var(--primary);
+    border-color: #cdebd5;
+}
+
+.year-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 9999;
+    padding: 18px;
+    overflow: auto;
+}
+
+.year-modal.show {
+    display: block;
+}
+
+.year-panel {
+    background: #fff;
+    border-radius: 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 22px;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+}
+
+.year-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 14px;
+}
+
+.year-title {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--primary);
+    letter-spacing: -0.03em;
+}
+
+.year-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.year-board-wrap {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.year-board {
+    min-width: 1320px;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(96px, 1fr));
+    border: 1px solid #e7e3dc;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.year-month-column {
+    border-right: 1px solid #e7e3dc;
+    background: #fff;
+}
+
+.year-month-column:last-child {
+    border-right: none;
+}
+
+.year-month-title {
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f6f4ef;
+    border-bottom: 1px solid #e7e3dc;
+    font-size: 0.68rem;
+    font-weight: 900;
+    color: #555;
+    letter-spacing: 0.02em;
+}
+
+.year-day-row {
+    min-height: 34px;
+    border-bottom: 1px solid #efebe5;
+    padding: 3px 4px;
+    overflow: hidden;
+}
+
+.year-day-row:nth-child(even) {
+    background: #faf8f4;
+}
+
+.year-day-row:last-child {
+    border-bottom: none;
+}
+
+.year-day-row.empty {
+    background: #f7f7f7;
+    color: #c8c8c8;
+}
+
+.year-day-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 3px;
+    margin-bottom: 1px;
+}
+
+.year-day-num {
+    font-size: 0.58rem;
+    font-weight: 900;
+    color: #777;
+}
+
+.year-weekday-small {
+    font-size: 0.48rem;
+    font-weight: 800;
+    color: #aaa;
+    text-transform: lowercase;
+}
+
+.year-todo {
+    font-size: 0.5rem;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 1px;
+    color: #d97a7a;
+    text-decoration: line-through;
+    font-weight: 700;
+}
+
+.year-todo.done {
+    color: #333;
+    text-decoration: none;
+}
+
+@media (max-width: 520px) {
+    .year-modal {
+        padding: 8px;
+    }
+
+    .year-panel {
+        padding: 14px;
+        border-radius: 18px;
+    }
+
+    .year-title {
+        font-size: 1.2rem;
+    }
+
+    .year-board {
+        min-width: 1180px;
+    }
 }
 
 #importMergeFile,
@@ -404,12 +574,13 @@ input[type="text"] {
 
             <input type="file" id="importMergeFile" accept=".json" onchange="mergeData(event)">
             <input type="file" id="importOverwriteFile" accept=".json" onchange="overwriteData(event)">
+            <button class="backup-btn year-view-btn" onclick="openYearView()">🗓️ 1년 한눈에 보기</button>
         </div>
 
         <div class="card">
             <h2 class="someday-title">🕶️ 나중에 할 일</h2>
             <div style="display:flex; gap:5px; margin-bottom:15px;">
-                <input type="text" id="somedayInput" style="flex:1; padding:10px; border-radius:10px; border:1px solid #eee; font-size:0.85rem;" placeholder="나중에 처리할 일!">
+                <input type="text" id="somedayInput" style="flex:1; padding:10px; border-radius:10px; border:1px solid #eee; font-size:0.85rem;" placeholder="나중에 쿨하게 처리할 일!">
                 <button onclick="addSomeday()" style="background:var(--someday); color:white; border:none; border-radius:10px; padding:0 12px; font-size:0.85rem; cursor:pointer;">등록</button>
             </div>
             <div id="somedayList"></div>
@@ -429,10 +600,26 @@ input[type="text"] {
     </div>
 </div>
 
+
+<div id="yearModal" class="year-modal">
+    <div class="year-panel">
+        <div class="year-header">
+            <button class="nav-btn" onclick="changeYearView(-1)">◀</button>
+            <div id="yearViewTitle" class="year-title"></div>
+            <div class="year-actions">
+                <button class="nav-btn" onclick="changeYearView(1)">▶</button>
+                <button class="today-btn" onclick="closeYearView()">닫기</button>
+            </div>
+        </div>
+        <div id="yearGrid" class="year-grid"></div>
+    </div>
+</div>
+
 <script>
-let todos = JSON.parse(localStorage.getItem('bunnyTodos') || '[]');
-let somedayList = JSON.parse(localStorage.getItem('bunnySomeday') || '[]');
+let todos = JSON.parse(localStorage.getItem('todoRecords') || '[]');
+let somedayList = JSON.parse(localStorage.getItem('somedayRecords') || '[]');
 let viewDate = new Date();
+let yearViewDate = new Date();
 
 const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -452,8 +639,8 @@ window.onload = () => {
 };
 
 function save() {
-    localStorage.setItem('bunnyTodos', JSON.stringify(todos));
-    localStorage.setItem('bunnySomeday', JSON.stringify(somedayList));
+    localStorage.setItem('todoRecords', JSON.stringify(todos));
+    localStorage.setItem('somedayRecords', JSON.stringify(somedayList));
 }
 
 function normalizeData() {
@@ -521,12 +708,12 @@ function renderSomeday() {
             <span class="someday-text">${escapeHtml(s.text)}</span>
             <button class="del-btn" onclick="deleteSomeday(${s.id})">🗑️</button>
         </div>
-    `).join('') || '<div style="text-align:center; color:#ccc; font-size:0.75rem;">나중에 할 일을 적어봐!</div>';
+    `).join('') || '<div style="text-align:center; color:#ccc; font-size:0.75rem;">나중에 할 일을 쿨하게 적어봐!</div>';
 }
 
 function exportData() {
     const data = {
-        app: 'Bunny Todo List',
+        app: 'Todo List',
         version: 2,
         exportedAt: new Date().toISOString(),
         todos,
@@ -538,7 +725,7 @@ function exportData() {
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = `투두리스트 백업_phone.json`;
+    a.download = `투두리스트 백업.json`;
     a.click();
 
     URL.revokeObjectURL(url);
@@ -809,6 +996,68 @@ function renderAll() {
             </div>
         `;
     }
+}
+
+
+function openYearView() {
+    yearViewDate = new Date(viewDate);
+    document.getElementById('yearModal').classList.add('show');
+    renderYearView();
+}
+
+function closeYearView() {
+    document.getElementById('yearModal').classList.remove('show');
+}
+
+function changeYearView(step) {
+    yearViewDate.setFullYear(yearViewDate.getFullYear() + step);
+    renderYearView();
+}
+
+function renderYearView() {
+    const year = yearViewDate.getFullYear();
+    document.getElementById('yearViewTitle').innerText = `${year}년 전체 보기`;
+
+    const yearGrid = document.getElementById('yearGrid');
+    yearGrid.innerHTML = '';
+    yearGrid.className = 'year-board-wrap';
+
+    const weekdayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    let boardHtml = `<div class="year-board">`;
+
+    for (let month = 0; month < 12; month++) {
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        boardHtml += `
+            <div class="year-month-column">
+                <div class="year-month-title">${monthNames[month].toUpperCase()}</div>
+        `;
+
+        for (let day = 1; day <= 31; day++) {
+            if (day > lastDay) {
+                boardHtml += `<div class="year-day-row empty"></div>`;
+                continue;
+            }
+
+            const tempD = new Date(year, month, day);
+            const dayTodos = todos.filter(t => t.dateString === tempD.toDateString());
+            const weekday = weekdayNames[tempD.getDay()];
+
+            boardHtml += `
+                <div class="year-day-row">
+                    <div class="year-day-head">
+                        <span class="year-day-num">${day}</span>
+                        <span class="year-weekday-small">${weekday}</span>
+                    </div>
+                    ${dayTodos.map(t => `<div class="year-todo ${t.completed ? 'done' : ''}">${escapeHtml(t.text)}</div>`).join('')}
+                </div>
+            `;
+        }
+
+        boardHtml += `</div>`;
+    }
+
+    boardHtml += `</div>`;
+    yearGrid.innerHTML = boardHtml;
 }
 
 function escapeHtml(text) {
