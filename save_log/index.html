@@ -138,7 +138,7 @@ h1 {
 
 .filter-tabs {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 6px;
     margin-top: 14px;
 }
@@ -557,12 +557,13 @@ h1 {
         </div>
 
         <div class="search-box">
-            <input id="searchInput" type="text" placeholder="검색하기  예: #코딩, 유튜브, 네이버" oninput="renderItems()">
+            <input id="searchInput" type="text" placeholder="검색하기  예: #나중에보기, 유튜브, 인스타" oninput="renderItems()">
             <button class="clear-btn" onclick="clearSearch()">×</button>
         </div>
 
         <div class="filter-tabs">
             <button class="tab-btn active" onclick="setView('all')">전체</button>
+            <button class="tab-btn" onclick="setView('normal')">일반</button>
             <button class="tab-btn" onclick="setView('pinned')">📌 핀</button>
             <button class="tab-btn" onclick="setView('favorite')">⭐ 즐겨찾기</button>
             <button class="tab-btn" onclick="setView('recent')">👀 최근 본 것</button>
@@ -859,7 +860,7 @@ function setView(view) {
     currentView = view;
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-    const indexMap = { all: 1, pinned: 2, favorite: 3, recent: 4, summary: 5 };
+    const indexMap = { all: 1, normal: 2, pinned: 3, favorite: 4, recent: 5, summary: 6 };
     document.querySelector(`.tab-btn:nth-child(${indexMap[view]})`).classList.add('active');
 
     renderItems();
@@ -975,6 +976,7 @@ function getFilteredItems() {
     const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
 
     let base = items.filter(item => {
+        if (currentView === 'normal') return !item.pinned && !item.favorite;
         if (currentView === 'pinned') return item.pinned;
         if (currentView === 'favorite') return item.favorite;
         if (currentView === 'recent') return item.lastViewedAt;
