@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="머릿속 생각을 날짜별로 빠르게 적고 자동 저장하는 개인 브레인덤프 노트입니다.">
+<meta name="theme-color" content="#8b5cf6">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Brain Dump">
+<meta property="og:description" content="머릿속 생각을 아무렇게나 털어놓는 귀여운 기록 공간">
+<meta property="og:locale" content="ko_KR">
+<title>Brain Dump | 브레인덤프 노트</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%238b5cf6'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' dominant-baseline='middle' font-size='34'%3E%F0%9F%A7%A0%3C/text%3E%3C/svg%3E">
+
+<style>
+:root {
+    --bg:#f7f4ff;
+    --card:#ffffff;
+    --text:#2f2a3a;
+    --sub:#9a91aa;
+    --border:#eee7fb;
+    --primary:#8b5cf6;
+    --primary-dark:#6d3fd8;
+    --pink:#ff8fab;
+    --mint:#7de2d1;
+    --yellow:#ffe08a;
+    --blue:#8ec5ff;
+    --danger:#ff6b6b;
+    --soft:#f3edff;
+    --shadow:0 12px 30px rgba(105, 70, 180, 0.12);
+}
+
+* {
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+body {
+    margin:0;
+    min-height:100vh;
+    background:
+        radial-gradient(circle at top left, #ffe0ec 0, transparent 32%),
+        radial-gradient(circle at bottom right, #d9fff8 0, transparent 34%),
+        var(--bg);
+    color:var(--text);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+
+button, input, textarea {
+    font-family:inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline:3px solid rgba(139, 92, 246, 0.35);
+    outline-offset:3px;
+}
+
+.app {
+    max-width:1400px;
+    margin:0 auto;
+    padding:20px;
+}
+
+.topbar {
+    background:rgba(255,255,255,0.82);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.7);
+    border-radius:30px;
+    padding:18px 20px;
+    box-shadow:var(--shadow);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:14px;
+    margin-bottom:18px;
+}
+
+.logo {
+    font-size:1.6rem;
+    font-weight:950;
+    letter-spacing:-0.05em;
+}
+
+.logo span {
+    color:var(--primary);
+}
+
+.sub {
+    color:var(--sub);
+    font-size:0.82rem;
+    font-weight:800;
+    margin-top:3px;
+}
+
+.btn {
+    border:none;
+    border-radius:15px;
+    padding:10px 13px;
+    background:#eee7fb;
+    color:#5a4b73;
+    font-size:0.82rem;
+    font-weight:900;
+    cursor:pointer;
+    transition:transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.btn:hover {
+    filter:brightness(0.98);
+    transform:translateY(-1px);
+}
+
+.btn:active {
+    transform:translateY(0);
+}
+
+.btn.primary {
+    background:var(--primary);
+    color:white;
+}
+
+.btn.merge {
+    background:#e9fbf7;
+    color:#16866f;
+}
+
+.btn.overwrite {
+    background:#fff0f3;
+    color:#d84d73;
+}
+
+.btn.danger {
+    background:#fff0f0;
+    color:var(--danger);
+}
+
+.btn-row {
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.layout {
+    display:grid;
+    grid-template-columns:360px 1fr;
+    gap:18px;
+    align-items:start;
+}
+
+.sidebar, .editor {
+    background:rgba(255,255,255,0.88);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.75);
+    border-radius:30px;
+    box-shadow:var(--shadow);
+}
+
+.sidebar {
+    padding:16px;
+    max-height:calc(100vh - 126px);
+    overflow:auto;
+}
+
+.editor {
+    padding:24px;
+    min-height:calc(100vh - 126px);
+}
+
+.calendar {
+    background:white;
+    border:1px solid var(--border);
+    border-radius:24px;
+    padding:14px;
+    margin-bottom:16px;
+}
+
+.calendar-head {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+    font-weight:950;
+    color:var(--primary-dark);
+}
+
+.cal-grid {
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+    gap:5px;
+}
+
+.cal-weekday {
+    text-align:center;
+    color:var(--sub);
+    font-size:0.68rem;
+    font-weight:900;
+    padding-bottom:4px;
+}
+
+.cal-day, .cal-empty {
+    border:none;
+    padding:0;
+    height:36px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    font-size:0.82rem;
+    font-weight:850;
+    position:relative;
+}
+
+.cal-day {
+    cursor:pointer;
+    background:#fbf9ff;
+    color:var(--text);
+}
+
+.cal-day:hover {
+    background:#efe7ff;
+}
+
+.cal-day.has-entry {
+    background:#fff4b8;
+    color:#6b5300;
+}
+
+.cal-day.selected {
+    background:var(--primary);
+    color:white;
+}
+
+.cal-day.has-entry.selected {
+    background:linear-gradient(135deg, var(--primary), var(--pink));
+    color:white;
+}
+
+.cal-day.has-entry::after {
+    content:"";
+    position:absolute;
+    bottom:3px;
+    width:5px;
+    height:5px;
+    border-radius:50%;
+    background:var(--pink);
+}
+
+.cal-day.selected::after {
+    background:white;
+}
+
+.search-input {
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:12px 13px;
+    outline:none;
+    background:white;
+    margin-bottom:12px;
+    font-size:0.9rem;
+}
+
+.small-title {
+    color:var(--sub);
+    font-size:0.78rem;
+    font-weight:950;
+    margin:16px 0 8px;
+}
+
+.dump-list {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.dump-item {
+    width:100%;
+    border:1px solid var(--border);
+    background:white;
+    border-radius:18px;
+    padding:12px;
+    cursor:pointer;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    color:inherit;
+    text-align:left;
+}
+
+.dump-item.active {
+    border-color:var(--primary);
+    background:#f7f1ff;
+}
+
+.dump-date-badge {
+    width:52px;
+    flex-shrink:0;
+    background:linear-gradient(135deg, #ffe0ec, #e8ddff);
+    color:#6d3fd8;
+    border-radius:15px;
+    padding:8px 4px;
+    text-align:center;
+    font-weight:950;
+    font-size:0.7rem;
+    line-height:1.2;
+}
+
+.dump-info {
+    flex:1;
+    min-width:0;
+}
+
+.dump-title {
+    font-weight:950;
+    font-size:0.9rem;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.dump-preview {
+    color:var(--sub);
+    font-size:0.75rem;
+    line-height:1.4;
+    margin-top:4px;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+}
+
+.dump-meta {
+    color:#b4a9c4;
+    font-size:0.68rem;
+    font-weight:800;
+    margin-top:5px;
+}
+
+.editor-empty {
+    min-height:520px;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    color:var(--sub);
+    font-weight:850;
+    line-height:1.7;
+}
+
+.entry-date {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:#f3edff;
+    color:var(--primary-dark);
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:0.82rem;
+    font-weight:950;
+    margin-bottom:14px;
+}
+
+.title-input {
+    width:100%;
+    border:none;
+    outline:none;
+    background:transparent;
+    color:var(--text);
+    font-size:2rem;
+    font-weight:950;
+    letter-spacing:-0.05em;
+    margin-bottom:12px;
+}
+
+.content-area {
+    width:100%;
+    min-height:520px;
+    resize:vertical;
+    border:1px solid var(--border);
+    border-radius:26px;
+    padding:20px;
+    outline:none;
+    background:white;
+    color:var(--text);
+    line-height:1.75;
+    font-size:1rem;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,0.4);
+}
+
+.editor-actions {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:14px;
+}
+
+.status {
+    color:var(--sub);
+    font-size:0.78rem;
+    font-weight:850;
+}
+
+.empty-small {
+    background:white;
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:18px;
+    text-align:center;
+    color:var(--sub);
+    font-weight:850;
+    line-height:1.6;
+}
+
+#importMergeFile,
+#importOverwriteFile {
+    display:none;
+}
+
+@media (max-width:900px) {
+    .app {
+        padding:12px;
+    }
+
+    .topbar {
+        align-items:flex-start;
+        flex-direction:column;
+    }
+
+    .layout {
+        grid-template-columns:1fr;
+    }
+
+    .sidebar {
+        max-height:none;
+    }
+
+    .editor {
+        min-height:auto;
+        padding:18px;
+    }
+
+    .title-input {
+        font-size:1.55rem;
+    }
+
+    .content-area {
+        min-height:360px;
+    }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+    <header class="topbar">
+        <div>
+            <div class="logo">Brain <span>Dump</span> 🧠✨</div>
+            <div class="sub">머릿속 생각을 아무렇게나 털어놓는 귀여운 기록 공간</div>
+        </div>
+
+        <div class="btn-row">
+            <button type="button" class="btn primary" onclick="createEntry()">＋ 새 생각</button>
+            <button type="button" class="btn" onclick="exportData()">💾 백업</button>
+            <button type="button" class="btn merge" onclick="document.getElementById('importMergeFile').click()">🔀 통합</button>
+            <button type="button" class="btn overwrite" onclick="document.getElementById('importOverwriteFile').click()">📂 불러오기</button>
+        </div>
+    </header>
+
+    <main class="layout">
+        <aside class="sidebar">
+            <div class="calendar">
+                <div class="calendar-head">
+                    <button type="button" class="btn" aria-label="이전 달" onclick="changeCalendarMonth(-1)">◀</button>
+                    <span id="calendarLabel"></span>
+                    <button type="button" class="btn" aria-label="다음 달" onclick="changeCalendarMonth(1)">▶</button>
+                </div>
+                <div class="cal-grid" id="calendarGrid"></div>
+            </div>
+
+            <input class="search-input" id="searchInput" type="search" placeholder="생각 검색하기" aria-label="생각 검색하기" oninput="renderList()">
+
+            <div class="small-title">Dump List</div>
+            <div class="dump-list" id="dumpList"></div>
+        </aside>
+
+        <section class="editor" id="editor"></section>
+    </main>
+</div>
+
+<input type="file" id="importMergeFile" accept=".json" onchange="mergeData(event)">
+<input type="file" id="importOverwriteFile" accept=".json" onchange="overwriteData(event)">
+
+<noscript>
+    <div class="app">
+        <div class="empty-small">Brain Dump는 브라우저 저장소를 사용하는 앱이라 JavaScript를 켜야 사용할 수 있어요.</div>
+    </div>
+</noscript>
+
+<script>
+const STORAGE_KEY = "BrainDump_v1";
+
+let state = loadState();
+let selectedId = state.entries[0]?.id || null;
+let calendarDate = new Date();
+let selectedCalendarDate = makeDateKey(new Date());
+let saveTimer = null;
+
+function loadState() {
+    let saved = null;
+
+    try {
+        saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    } catch {
+        saved = null;
+    }
+
+    if (saved && Array.isArray(saved.entries)) {
+        return normalizeState(saved);
+    }
+
+    return {
+        entries: []
+    };
+}
+
+function normalizeState(data) {
+    return {
+        entries: (data.entries || []).map((e, index) => ({
+            id: typeof e.id === "string" && e.id ? e.id : makeId(),
+            title: e.title || "제목 없는 생각",
+            body: e.body || "",
+            dateKey: e.dateKey || makeDateKey(new Date(e.createdAt || Date.now())),
+            createdAt: e.createdAt || new Date().toISOString(),
+            updatedAt: e.updatedAt || null,
+            order: Number.isFinite(e.order) ? e.order : index
+        }))
+    };
+}
+
+function saveState() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+        alert("브라우저 저장 공간이 부족해서 저장하지 못했어. 백업 후 오래된 기록을 정리해줘.");
+    }
+}
+
+function currentEntry() {
+    return state.entries.find(e => e.id === selectedId) || null;
+}
+
+function createEntry() {
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const entry = {
+        id: makeId(),
+        title: "새 생각",
+        body: "",
+        dateKey: makeDateKey(now),
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        order: 0
+    };
+
+    state.entries.forEach(e => e.order = (e.order || 0) + 1);
+    state.entries.unshift(entry);
+
+    selectedId = entry.id;
+    selectedCalendarDate = entry.dateKey;
+    calendarDate = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    saveState();
+    renderAll();
+}
+
+function selectEntry(id) {
+    selectedId = id;
+
+    const entry = currentEntry();
+    if (entry) {
+        selectedCalendarDate = entry.dateKey;
+        const d = parseDateKey(entry.dateKey);
+        calendarDate = new Date(d.getFullYear(), d.getMonth(), 1);
+    }
+
+    renderAll();
+}
+
+function updateEntry(field, value) {
+    const entry = currentEntry();
+    if (!entry) return;
+
+    entry[field] = value;
+    entry.updatedAt = new Date().toISOString();
+
+    showSaving();
+    saveState();
+    renderList();
+    renderCalendar();
+}
+
+function deleteEntry(id) {
+    if (!confirm("이 생각 기록을 삭제할까?")) return;
+
+    state.entries = state.entries.filter(e => e.id !== id);
+
+    if (selectedId === id) {
+        selectedId = state.entries[0]?.id || null;
+    }
+
+    saveState();
+    renderAll();
+}
+
+function sortedEntries() {
+    return [...state.entries].sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+}
+
+function renderList() {
+    const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+    const list = document.getElementById("dumpList");
+
+    let entries = sortedEntries();
+
+    if (keyword) {
+        entries = entries.filter(e =>
+            (e.title || "").toLowerCase().includes(keyword) ||
+            (e.body || "").toLowerCase().includes(keyword)
+        );
+    }
+
+    list.innerHTML = entries.length
+        ? entries.map(e => `
+            <button type="button" class="dump-item ${e.id === selectedId ? "active" : ""}" data-entry-id="${escapeAttr(e.id)}">
+                <div class="dump-date-badge">
+                    ${formatDateShort(e.dateKey)}
+                </div>
+                <div class="dump-info">
+                    <div class="dump-title">${escapeHtml(e.title)}</div>
+                    <div class="dump-preview">${escapeHtml(e.body || "아직 내용이 없어.")}</div>
+                    <div class="dump-meta">${e.updatedAt ? "수정됨" : "작성됨"} · ${formatDate(e.updatedAt || e.createdAt)}</div>
+                </div>
+            </button>
+        `).join("")
+        : `<div class="empty-small">아직 기록이 없어.<br>새 생각을 눌러 시작해봐 ✨</div>`;
+
+    list.querySelectorAll("[data-entry-id]").forEach(item => {
+        item.addEventListener("click", () => selectEntry(item.dataset.entryId));
+    });
+}
+
+function renderEditor() {
+    const editor = document.getElementById("editor");
+    const entry = currentEntry();
+
+    if (!entry) {
+        editor.innerHTML = `
+            <div class="editor-empty">
+                아직 선택된 생각이 없어 🫧<br>
+                “＋ 새 생각”을 눌러 머릿속을 비워보자.
+            </div>
+        `;
+        return;
+    }
+
+    editor.innerHTML = `
+        <div class="entry-date">🗓️ ${formatDate(entry.dateKey)}</div>
+        <input class="title-input" value="${escapeAttr(entry.title)}" placeholder="대표 제목을 적어줘" oninput="updateEntry('title', this.value)">
+        <textarea class="content-area" placeholder="여기에 머릿속 생각을 마구마구 적어줘." oninput="updateEntry('body', this.value)">${escapeHtml(entry.body)}</textarea>
+
+        <div class="editor-actions">
+            <div class="status" id="saveStatus">자동 저장됨</div>
+            <div class="btn-row">
+                <button type="button" class="btn danger" data-delete-entry="${escapeAttr(entry.id)}">삭제</button>
+            </div>
+        </div>
+    `;
+
+    editor.querySelector("[data-delete-entry]").addEventListener("click", event => {
+        deleteEntry(event.currentTarget.dataset.deleteEntry);
+    });
+}
+
+function renderCalendar() {
+    const grid = document.getElementById("calendarGrid");
+    const y = calendarDate.getFullYear();
+    const m = calendarDate.getMonth();
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    document.getElementById("calendarLabel").innerText = `${monthNames[m]} ${y}`;
+
+    grid.innerHTML = ["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => `<div class="cal-weekday">${d}</div>`).join("");
+
+    const first = new Date(y, m, 1);
+    const last = new Date(y, m + 1, 0);
+
+    for (let i = 0; i < first.getDay(); i++) {
+        grid.innerHTML += `<div class="cal-empty"></div>`;
+    }
+
+    for (let d = 1; d <= last.getDate(); d++) {
+        const dateKey = makeDateKey(new Date(y, m, d));
+        const hasEntry = state.entries.some(e => e.dateKey === dateKey);
+        const selected = dateKey === selectedCalendarDate;
+
+        grid.innerHTML += `
+            <button type="button" class="cal-day ${hasEntry ? "has-entry" : ""} ${selected ? "selected" : ""}" onclick="selectDate('${dateKey}')" aria-label="${formatDate(dateKey)}${hasEntry ? " 기록 있음" : ""}">
+                ${d}
+            </button>
+        `;
+    }
+}
+
+function selectDate(dateKey) {
+    selectedCalendarDate = dateKey;
+
+    const entriesOfDay = sortedEntries().filter(e => e.dateKey === dateKey);
+
+    if (entriesOfDay.length > 0) {
+        selectedId = entriesOfDay[0].id;
+    } else {
+        selectedId = null;
+    }
+
+    renderAll();
+}
+
+function changeCalendarMonth(step) {
+    calendarDate.setMonth(calendarDate.getMonth() + step);
+    renderCalendar();
+}
+
+function showSaving() {
+    clearTimeout(saveTimer);
+
+    const status = document.getElementById("saveStatus");
+    if (status) status.innerText = "저장 중...";
+
+    saveTimer = setTimeout(() => {
+        const nowStatus = document.getElementById("saveStatus");
+        if (nowStatus) nowStatus.innerText = "자동 저장됨";
+    }, 500);
+}
+
+function exportData() {
+    const data = {
+        app: "Brain Dump",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        ...state
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `브레인덤프 백업.json`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function parseImported(parsed) {
+    if (!parsed || !Array.isArray(parsed.entries)) return null;
+    return normalizeState(parsed);
+}
+
+function makeEntryKey(entry) {
+    const title = String(entry.title || "").trim().toLowerCase();
+    const body = String(entry.body || "").trim().toLowerCase();
+    return `${entry.dateKey || ""}::${title}::${body.slice(0, 80)}`;
+}
+
+function mergeData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = e => {
+        try {
+            const imported = parseImported(JSON.parse(e.target.result));
+
+            if (!imported) {
+                alert("통합할 수 있는 백업 파일이 아니야 ㅠㅠ");
+                return;
+            }
+
+            if (!confirm("현재 기록을 유지하고 백업 파일을 통합할까?")) return;
+
+            const map = new Map();
+            state.entries.forEach(entry => map.set(makeEntryKey(entry), entry));
+
+            let added = 0;
+            let merged = 0;
+
+            imported.entries.forEach(incoming => {
+                const key = makeEntryKey(incoming);
+                const existing = map.get(key);
+
+                if (existing) {
+                    const incomingNewer = incoming.updatedAt && (!existing.updatedAt || new Date(incoming.updatedAt) > new Date(existing.updatedAt));
+                    if (incomingNewer) {
+                        existing.title = incoming.title;
+                        existing.body = incoming.body;
+                        existing.updatedAt = incoming.updatedAt;
+                    }
+                    merged++;
+                } else {
+                    state.entries.push(incoming);
+                    map.set(key, incoming);
+                    added++;
+                }
+            });
+
+            saveState();
+            selectedId = state.entries[0]?.id || null;
+            renderAll();
+
+            alert(`통합 완료! 새 기록 ${added}개 추가, 중복 기록 ${merged}개 정리했어.`);
+        } catch {
+            alert("파일을 통합하는 중 문제가 생겼어 ㅠㅠ");
+        }
+
+        event.target.value = "";
+    };
+
+    reader.readAsText(file);
+}
+
+function overwriteData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = e => {
+        try {
+            const imported = parseImported(JSON.parse(e.target.result));
+
+            if (!imported) {
+                alert("불러올 수 있는 백업 파일이 아니야 ㅠㅠ");
+                return;
+            }
+
+            if (!confirm("현재 기록이 백업 파일 내용으로 교체돼. 계속할까?")) return;
+
+            state = imported;
+            selectedId = state.entries[0]?.id || null;
+
+            saveState();
+            renderAll();
+
+            alert("불러오기 완료!");
+        } catch {
+            alert("파일을 불러오는 중 문제가 생겼어 ㅠㅠ");
+        }
+
+        event.target.value = "";
+    };
+
+    reader.readAsText(file);
+}
+
+function renderAll() {
+    renderCalendar();
+    renderList();
+    renderEditor();
+}
+
+function makeDateKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function parseDateKey(dateKey) {
+    return new Date(dateKey + "T00:00:00");
+}
+
+function makeId() {
+    if (window.crypto && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+
+    return "entry_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+}
+
+function formatDate(dateValue) {
+    const d = String(dateValue).includes("-") && String(dateValue).length === 10
+        ? parseDateKey(dateValue)
+        : new Date(dateValue);
+
+    if (isNaN(d.getTime())) return "";
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatDateShort(dateKey) {
+    const d = parseDateKey(dateKey);
+    if (isNaN(d.getTime())) return "";
+    return `${d.getMonth()+1}.${d.getDate()}`;
+}
+
+function escapeHtml(text) {
+    return String(text || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function escapeAttr(text) {
+    return escapeHtml(text).replaceAll("\n", "&#10;");
+}
+
+saveState();
+renderAll();
+</script>
+</body>
+</html>
