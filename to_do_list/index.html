@@ -939,18 +939,29 @@ function bindEnterSubmit(inputId, submitAction) {
     if (!input) return;
 
     let isComposing = false;
-    let pendingSubmit = false;
+    let enterPressedDuringComposition = false;
     let submitTimer = null;
+    let clearTimer = null;
 
-    const submitAfterIme = () => {
+    const clearInputAfterSubmit = () => {
+        input.value = '';
+        clearTimeout(clearTimer);
+        clearTimer = setTimeout(() => {
+            input.value = '';
+        }, 120);
+        setTimeout(() => {
+            input.value = '';
+        }, 320);
+    };
+
+    const submitAfterInputSettles = () => {
         clearTimeout(submitTimer);
         submitTimer = setTimeout(() => {
-            pendingSubmit = false;
+            enterPressedDuringComposition = false;
+            if (!input.value.trim()) return;
             submitAction();
-            setTimeout(() => {
-                input.value = '';
-            }, 0);
-        }, 30);
+            clearInputAfterSubmit();
+        }, 120);
     };
 
     input.addEventListener('compositionstart', () => {
@@ -959,20 +970,26 @@ function bindEnterSubmit(inputId, submitAction) {
 
     input.addEventListener('compositionend', () => {
         isComposing = false;
-        if (pendingSubmit) submitAfterIme();
+        if (enterPressedDuringComposition) submitAfterInputSettles();
     });
 
     input.addEventListener('keydown', e => {
         if (e.key !== 'Enter') return;
 
-        e.preventDefault();
-
         if (e.isComposing || isComposing || e.keyCode === 229) {
-            pendingSubmit = true;
+            enterPressedDuringComposition = true;
             return;
         }
 
-        submitAfterIme();
+        e.preventDefault();
+    });
+
+    input.addEventListener('keyup', e => {
+        if (e.key !== 'Enter') return;
+        if (e.isComposing || isComposing || e.keyCode === 229) return;
+
+        e.preventDefault();
+        submitAfterInputSettles();
     });
 }
 
