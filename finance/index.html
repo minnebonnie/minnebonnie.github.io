@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="브라우저 localStorage에 저장되는 개인용 가계부 웹앱입니다. 수입/지출, 원화/달러, 월별 캘린더, 기간별 분석 리포트, JSON 백업을 지원합니다.">
+    <meta name="theme-color" content="#343a40">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="가계부">
+    <meta property="og:description" content="월별 캘린더와 분석 리포트가 있는 개인용 가계부 웹앱">
+    <title>가계부</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght=400;600;800&display=swap');
+        :root { 
+            --income: #2ecc71; --expense: #ff5252; --usd: #f39c12; --bg: #f8f9fa; 
+            --card: #ffffff; --text: #212529; --border: #dee2e6; --accent: #6c5ce7;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: var(--text); line-height: 1.5; }
+        button, input, select, textarea { font: inherit; }
+        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(108, 92, 231, 0.28); outline-offset: 2px; }
+        .container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 350px 1fr; gap: 25px; }
+        .card { background: var(--card); padding: 24px; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border); margin-bottom: 20px; }
+        h2 { margin: 0 0 18px 0; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+
+        /* 입력 UI */
+        .input-group { display: flex; flex-direction: column; gap: 12px; }
+        input, select, textarea { padding: 14px; border-radius: 12px; border: 1px solid var(--border); font-family: inherit; font-size: 0.95rem; outline: none; transition: 0.2s; }
+        .selector-group { display: flex; gap: 8px; }
+        .btn { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; font-weight: 800; background: #fff; transition: 0.2s; font-size: 0.9rem; }
+        .type-btn.active[data-type="expense"] { background: var(--expense); color: white; border-color: var(--expense); }
+        .type-btn.active[data-type="income"] { background: var(--income); color: white; border-color: var(--income); }
+        .curr-btn.active { background: #343a40; color: white; border-color: #343a40; }
+        .submit-btn { background: #343a40; color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 800; cursor: pointer; width:100%; }
+
+        /* 메모/체크리스트 */
+        .memo-item { display: flex; align-items: center; justify-content: space-between; background: #f8f9fa; padding: 10px 15px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #eee; }
+        .memo-text { font-size: 0.9rem; font-weight: 600; color: #444; flex: 1; }
+        .memo-del { color: #ff5252; background: none; border: none; font-weight: 800; cursor: pointer; }
+
+        /* 캘린더 & 주합계 */
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr) 105px; gap: 10px; }
+        .cal-cell { background: #fff; border: 1px solid var(--border); border-radius: 18px; min-height: 110px; padding: 12px; cursor: pointer; transition: 0.2s; }
+        .cal-amt { font-size: 0.7rem; font-weight: 700; text-align: right; margin-top: 1px; }
+        .week-total-cell { background: #f8f9fa; border-radius: 18px; display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 10px; border: 1px solid #eee; }
+        .week-tag { font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 8px; width: fit-content; }
+        .week-val { font-size: 0.75rem; font-weight: 800; line-height: 1.3; text-align: right; }
+
+        /* 월별 총합 카드 */
+        .month-summary-card { margin-top: 25px; padding: 22px; background: #343a40; color: white; border-radius: 24px; display: flex; justify-content: space-around; font-weight: 800; }
+
+        /* 리포트 모달 스타일 */
+        .report-open-btn { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 14px; font-weight: 800; cursor: pointer; margin-bottom: 20px; width: 100%; font-size: 1rem; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); }
+        .modal-content { background: #fff; margin: 3% auto; padding: 35px; width: 95%; max-width: 900px; border-radius: 32px; position: relative; max-height: 85vh; overflow-y: auto; }
+        .cat-filter-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; padding: 15px; background: #fff; border-radius: 15px; border: 1px solid #f1f3f5; }
+        .filter-chip { padding: 6px 14px; border-radius: 50px; background: #fff; border: 1px solid #ddd; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+        .filter-chip.active { background: #6c5ce7; color: white; border-color: #6c5ce7; }
+        
+        /* 리포트 상세 카드 레이아웃 */
+        .report-cat-card { background: #fff; border: 1px solid #eee; padding: 20px; border-radius: 20px; display: grid; grid-template-columns: 180px 1fr 1fr 140px; align-items: center; gap: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .report-cat-card.single-mode { grid-template-columns: 1fr 200px; }
+        .report-amt-box { text-align: right; background: #f8f9fa; padding: 8px 12px; border-radius: 10px; }
+        .report-amt-label { font-size: 0.7rem; color: #888; font-weight: bold; margin-bottom: 2px; }
+
+        .cat-tag { background:#f1f3f5; padding:6px 12px; border-radius:50px; font-size:0.8rem; font-weight:700; display:flex; align-items:center; gap:5px; }
+        .cat-del-btn { border:none; background:none; color:#adb5bd; cursor:pointer; font-weight:800; padding:0 2px; font-size:0.9rem; line-height:1; }
+        .cat-del-btn:hover { color:#ff5252; }
+
+        .backup-btn { flex: 1; padding: 10px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; border: 1px solid #ddd; background: #fff; cursor: pointer; }
+
+        /* 📅 기간 및 필터 제어 패널 디자인 최적화 */
+        .report-controls-panel { background: #f8f9fa; padding: 20px; border-radius: 24px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 14px; }
+        .period-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .period-label { font-size: 0.85rem; font-weight: 800; color: #444; min-width: 85px; }
+        .date-picker-container { display: flex; align-items: center; gap: 8px; }
+        .date-picker-container input[type="date"] { padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; width: 145px; }
+        .period-text-banner { font-size: 0.9rem; font-weight: 800; color: #6c5ce7; text-align: center; margin-bottom: 15px; background: #f1f0fe; padding: 12px; border-radius: 16px; line-height: 1.5; }
+        
+        .toggle-wrapper { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 800; color: #555; cursor: pointer; margin-right: 15px; }
+        
+        /* 우측 정렬 필터 그룹 */
+        .filter-select-group { display: flex; gap: 8px; margin-left: auto; }
+        .filter-select-group select { padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; width: 100px; }
+
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+        .github-note { font-size: 0.78rem; color: #6c757d; margin-top: 10px; line-height: 1.5; }
+
+        @media (max-width: 980px) {
+            body { padding: 12px; }
+            .container { grid-template-columns: 1fr; gap: 12px; }
+            .card { border-radius: 18px; padding: 18px; }
+            .cal-grid { grid-template-columns: repeat(7, minmax(76px, 1fr)) 96px; overflow-x: auto; padding-bottom: 8px; }
+            .main-panel > .card { overflow-x: auto; }
+            .modal-content { width: calc(100% - 24px); margin: 12px auto; padding: 24px 18px; border-radius: 22px; max-height: calc(100vh - 24px); }
+            .report-cat-card, .report-cat-card.single-mode { grid-template-columns: 1fr; align-items: stretch; }
+            .period-row, .date-picker-container, .filter-select-group { width: 100%; }
+            .filter-select-group { margin-left: 0; }
+            .date-picker-container input[type="date"], .filter-select-group select { flex: 1; width: 100%; min-width: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="side-panel">
+        <div class="card">
+            <h2>✍️ 내역 기록</h2>
+            <div class="input-group">
+                <div class="selector-group">
+                    <button class="btn type-btn active" data-type="expense" onclick="setType('expense')" aria-pressed="true">지출</button>
+                    <button class="btn type-btn" data-type="income" onclick="setType('income')" aria-pressed="false">수입</button>
+                </div>
+                <div class="selector-group">
+                    <button class="btn curr-btn active" data-curr="KRW" onclick="setCurrency('KRW')" aria-pressed="true">원화(₩)</button>
+                    <button class="btn curr-btn" data-curr="USD" onclick="setCurrency('USD')" aria-pressed="false">달러($)</button>
+                </div>
+                <label class="sr-only" for="dateInput">날짜</label>
+                <input type="date" id="dateInput">
+                <label class="sr-only" for="catSelect">분류</label>
+                <select id="catSelect"></select>
+                <label class="sr-only" for="amountInput">금액</label>
+                <input type="text" id="amountInput" placeholder="금액 입력" oninput="formatAmount(this)">
+                <label class="sr-only" for="memoInput">메모</label>
+                <textarea id="memoInput" placeholder="메모를 적어줘" style="height: 60px; resize: none;"></textarea>
+                <button class="submit-btn" onclick="addRecord()">기록하기 ✨</button>
+            </div>
+        </div>
+
+        <button class="report-open-btn" onclick="openReport()">📊 분석 리포트 보기</button>
+
+        <div class="card">
+            <h2>😎 나중에 할 일</h2>
+            <div style="display:flex; gap:8px; margin-bottom:15px;">
+                <input type="text" id="memoItemInput" placeholder="나중에 쿨하게 처리할 일!">
+                <button onclick="addMemoItem()" style="background:#6c5ce7; color:white; border:none; padding:0 15px; border-radius:10px; font-weight:800; cursor:pointer;">등록</button>
+            </div>
+            <div id="memoList"></div>
+        </div>
+
+        <div class="card">
+            <h2>🎨 분류 관리</h2>
+            <div class="input-group">
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="newCatEmoji" placeholder="📍" style="width: 50px; text-align: center;">
+                    <input type="text" id="newCatName" placeholder="분류 이름" style="flex:1;">
+                </div>
+                <button class="submit-btn" onclick="addCategory()" style="padding:10px;">분류 추가</button>
+            </div>
+            <div id="categoryDisplay" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:15px;"></div>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+            <div style="display:flex; gap:8px;">
+                <button class="backup-btn" onclick="exportData()">💾 백업</button>
+                <button class="backup-btn" onclick="importData()">📂 복원</button>
+            </div>
+            <p class="github-note">GitHub Pages에서는 데이터가 이 브라우저에만 저장돼요. 다른 기기에서도 쓰려면 백업 파일을 내려받아 복원하세요.</p>
+        </div>
+    </div>
+
+    <div class="main-panel">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <button onclick="changeMonth(-1)" aria-label="이전 달" style="border:none; background:none; cursor:pointer; font-size:1.5rem;">◀</button>
+                <h2 id="monthLabel" style="margin:0; font-size:1.6rem;"></h2>
+                <button onclick="changeMonth(1)" aria-label="다음 달" style="border:none; background:none; cursor:pointer; font-size:1.5rem;">▶</button>
+            </div>
+            <div id="calendarGrid" class="cal-grid"></div>
+            
+            <div class="month-summary-card">
+                <div style="text-align:center;">이달의 총 지출<br><span id="monthExp" style="color:#ff7675">0원</span></div>
+                <div style="text-align:center;">이달의 총 수입<br><span id="monthInc" style="color:#55efc4">0원</span></div>
+            </div>
+
+            <div id="detailPanel" class="card" style="display:none; margin-top:20px; border:1px solid var(--border);">
+                <h2 id="detailTitle">📅 상세 내역</h2>
+                <div id="detailList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 📊 분석 리포트 모달 영역 (UI 배치 최적화 완료) -->
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <button onclick="closeReport()" aria-label="분석 리포트 닫기" style="position:absolute; right:30px; top:25px; font-size:30px; cursor:pointer; color:#999; border:none; background:transparent;">&times;</button>
+        <h2 style="font-size:1.6rem; margin-bottom:25px;">📊 분석 리포트</h2>
+        
+        <div class="report-controls-panel">
+            <!-- 첫 번째 줄: 기간 1 설정 + 체크박스 + 우측 통합 필터 선택창 -->
+            <div class="period-row">
+                <div class="period-label">📅 첫 번째 기간:</div>
+                <div class="date-picker-container">
+                    <input type="date" id="reportStartDate1" onchange="generateReport()">
+                    <span style="font-weight:bold; color:#777;">~</span>
+                    <input type="date" id="reportEndDate1" onchange="generateReport()">
+                </div>
+                
+                <label class="toggle-wrapper" style="margin-left: 20px;">
+                    <input type="checkbox" id="compareToggle" checked onchange="toggleCompareMode()">
+                    <span>두 번째 기간 비교하기</span>
+                </label>
+
+                <!-- 💡 지출/수입과 원화/달러 선택 필터를 체크박스 오른쪽(우측 끝)으로 모아서 배치 -->
+                <div class="filter-select-group">
+                    <select id="reportType" onchange="generateReport()"><option value="expense">지출</option><option value="income">수입</option></select>
+                    <select id="reportCurr" onchange="generateReport()"><option value="KRW">원화(₩)</option><option value="USD">달러($)</option></select>
+                </div>
+            </div>
+            
+            <!-- 두 번째 줄: 기간 2 설정 (체크 시 토글) -->
+            <div class="period-row" id="secondPeriodRow">
+                <div class="period-label">📅 두 번째 기간:</div>
+                <div class="date-picker-container">
+                    <input type="date" id="reportStartDate2" onchange="generateReport()">
+                    <span style="font-weight:bold; color:#777;">~</span>
+                    <input type="date" id="reportEndDate2" onchange="generateReport()">
+                </div>
+            </div>
+        </div>
+
+        <div id="periodTextBanner" class="period-text-banner"></div>
+        <div id="filterChips" class="cat-filter-wrap"></div>
+        <div id="reportResult" style="margin-top:20px;"></div>
+    </div>
+</div>
+
+<script>
+    const KEY = 'Bunny_Global_Account_v3.6';
+    const DEFAULT_STATE = {
+        categories: [{emoji: "🍔", name: "식비"}, {emoji: "💰", name: "수익"}],
+        records: [],
+        memos: []
+    };
+    let state = loadState();
+    let viewDate = new Date();
+    let selectedCats = ['all'];
+
+    window.onload = () => { 
+        document.getElementById('dateInput').valueAsDate = new Date(); 
+        
+        const 오늘 = new Date();
+        const 이번달1일 = new Date(오늘.getFullYear(), 오늘.getMonth(), 1);
+        
+        document.getElementById('reportStartDate1').valueAsDate = 이번달1일;
+        document.getElementById('reportEndDate1').valueAsDate = 오늘;
+        
+        const 지난달1일 = new Date(오늘.getFullYear(), 오늘.getMonth() - 1, 1);
+        const 지난달말일 = new Date(오늘.getFullYear(), 오늘.getMonth(), 0);
+        document.getElementById('reportStartDate2').valueAsDate = 지난달1일;
+        document.getElementById('reportEndDate2').valueAsDate = 지난달말일;
+
+        renderAll(); 
+    };
+
+    function loadState() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+            return saved && Array.isArray(saved.categories) && Array.isArray(saved.records)
+                ? {...DEFAULT_STATE, ...saved, memos: saved.memos || []}
+                : JSON.parse(JSON.stringify(DEFAULT_STATE));
+        } catch {
+            return JSON.parse(JSON.stringify(DEFAULT_STATE));
+        }
+    }
+
+    function escapeHTML(value = '') {
+        return String(value).replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        }[char]));
+    }
+
+    function escapeAttr(value = '') {
+        return escapeHTML(value).replace(/`/g, '&#096;');
+    }
+
+    function jsArg(value = '') {
+        return JSON.stringify(String(value)).replace(/"/g, '&quot;');
+    }
+
+    function save() { localStorage.setItem(KEY, JSON.stringify(state)); renderAll(); }
+
+    function deleteCategory(name) {
+        if(confirm(`'${name}' 분류를 정말 삭제할까 바니?`)) {
+            state.categories = state.categories.filter(c => c.name !== name);
+            selectedCats = selectedCats.filter(c => c !== name);
+            if(selectedCats.length === 0) selectedCats = ['all'];
+            save();
+        }
+    }
+
+    function convertToUSDateFormat(dateString) {
+        if(!dateString) return "";
+        const [year, month, day] = dateString.split('-');
+        return `${month}/${day}/${year}`;
+    }
+
+    function toggleCompareMode() {
+        const isCompare = document.getElementById('compareToggle').checked;
+        const secondRow = document.getElementById('secondPeriodRow');
+        secondRow.style.display = isCompare ? 'flex' : 'none';
+        generateReport();
+    }
+
+    function generateReport() {
+        const s1 = document.getElementById('reportStartDate1').value;
+        const e1 = document.getElementById('reportEndDate1').value;
+        const s2 = document.getElementById('reportStartDate2').value;
+        const e2 = document.getElementById('reportEndDate2').value;
+        const isCompare = document.getElementById('compareToggle').checked;
+        
+        if (!s1 || !e1 || (isCompare && (!s2 || !e2))) return;
+        if (s1 > e1 || (isCompare && s2 > e2)) {
+            alert("시작 날짜가 종료 날짜보다 늦을 수 없어 바니! 🐰");
+            return;
+        }
+
+        const type = document.getElementById('reportType').value;
+        const curr = document.getElementById('reportCurr').value;
+        const unit = curr === 'KRW' ? '₩' : '$';
+
+        const formatS1 = convertToUSDateFormat(s1);
+        const formatE1 = convertToUSDateFormat(e1);
+
+        let totalPeriod1 = 0;
+        let totalPeriod2 = 0;
+        let html = '';
+        let catsToAnalize = selectedCats.includes('all') ? state.categories.map(c => c.name) : selectedCats;
+
+        state.records.forEach(r => {
+            if (r.type === type && r.currency === curr) {
+                if (r.date >= s1 && r.date <= e1) totalPeriod1 += r.amount;
+                if (isCompare && r.date >= s2 && r.date <= e2) totalPeriod2 += r.amount;
+            }
+        });
+
+        if (isCompare) {
+            const formatS2 = convertToUSDateFormat(s2);
+            const formatE2 = convertToUSDateFormat(e2);
+            const totalDiff = totalPeriod2 - totalPeriod1;
+            const totalPercent = totalPeriod1 === 0 ? 0 : Math.round((totalDiff / totalPeriod1) * 100);
+            
+            document.getElementById('periodTextBanner').innerHTML = `
+                🔍 기간 ①: ${formatS1} - ${formatE1} ➔ <b>${unit}${totalPeriod1.toLocaleString()}</b><br>
+                🔍 기간 ②: ${formatS2} - ${formatE2} ➔ <b>${unit}${totalPeriod2.toLocaleString()}</b><br>
+                <div style="font-size:0.85rem; margin-top:6px; font-weight:normal; color:${totalDiff > 0 ? 'var(--expense)' : 'var(--income)'}">
+                    전체 변동성: 기간 ① 대비 기간 ②가 <b>${totalDiff > 0 ? '▲' : '▼'} ${unit}${Math.abs(totalDiff).toLocaleString()} (${totalPeriod1 === 0 ? '비교불가' : Math.abs(totalPercent) + '%'})</b> ${totalDiff > 0 ? '증가' : '감소'}했어!
+                </div>
+            `;
+        } else {
+            document.getElementById('periodTextBanner').innerHTML = `
+                🔍 조회 기간: ${formatS1} - ${formatE1}<br>
+                <div style="font-size:1.2rem; margin-top:6px;">선택 기간 총합: <b>${unit}${totalPeriod1.toLocaleString()}</b></div>
+            `;
+        }
+
+        catsToAnalize.forEach(catName => {
+            const catObj = state.categories.find(c => c.name === catName); 
+            if(!catObj) return;
+            const safeEmoji = escapeHTML(catObj.emoji);
+            const safeName = escapeHTML(catName);
+
+            const amt1 = state.records.filter(r => 
+                r.date >= s1 && r.date <= e1 && 
+                r.type === type && r.currency === curr && r.cat === catName
+            ).reduce((a,r) => a + r.amount, 0);
+
+            let amt2 = 0;
+            if (isCompare) {
+                amt2 = state.records.filter(r => 
+                    r.date >= s2 && r.date <= e2 && 
+                    r.type === type && r.currency === curr && r.cat === catName
+                ).reduce((a,r) => a + r.amount, 0);
+            }
+
+            if(!isCompare && amt1 === 0) return;
+            if(isCompare && amt1 === 0 && amt2 === 0) return;
+
+            if (isCompare) {
+                const diff = amt2 - amt1;
+                const percent = amt1 === 0 ? 0 : Math.round((diff / amt1) * 100);
+
+                html += `
+                    <div class="report-cat-card">
+                        <div>
+                            <span style="font-size:1.2rem; margin-right:6px;">${safeEmoji}</span>
+                            <span style="font-weight:800; color:var(--text);">${safeName}</span>
+                        </div>
+                        <div class="report-amt-box">
+                            <div class="report-amt-label">기간 ① 합계</div>
+                            <div style="font-weight:700; font-size:0.95rem; color:#666;">${unit}${amt1.toLocaleString()}</div>
+                        </div>
+                        <div class="report-amt-box">
+                            <div class="report-amt-label">기간 ② 합계</div>
+                            <div style="font-weight:800; font-size:0.95rem; color:#222;">${unit}${amt2.toLocaleString()}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:800; font-size:0.95rem; color:${diff > 0 ? 'var(--expense)' : diff < 0 ? 'var(--income)' : '#777'}">
+                                ${diff > 0 ? '▲' : diff < 0 ? '▼' : '-'} ${unit}${Math.abs(diff).toLocaleString()}
+                            </div>
+                            <div style="font-size:0.75rem; font-weight:700; color:#999; margin-top:2px;">
+                                ${amt1 === 0 ? '첫 기간 내역없음' : Math.abs(percent) + '% 변동'}
+                            </div>
+                        </div>
+                    </div>`;
+            } else {
+                html += `
+                    <div class="report-cat-card single-mode">
+                        <div>
+                            <span style="font-size:1.2rem; margin-right:6px;">${safeEmoji}</span>
+                            <span style="font-weight:800; color:var(--text);">${safeName}</span>
+                        </div>
+                        <div style="text-align:right; font-weight:800; font-size:1.2rem; color:var(--text);">
+                            ${unit}${amt1.toLocaleString()}
+                        </div>
+                    </div>`;
+            }
+        });
+
+        document.getElementById('reportResult').innerHTML = html || '<div style="text-align:center; padding:40px; color:#adb5bd; font-weight:800;">지정된 기간에 기록된 내역이 없어 바니! 🐰</div>';
+    }
+
+    function toggleCat(name) { if (name === 'all') selectedCats = ['all']; else { selectedCats = selectedCats.filter(c => c !== 'all'); if (selectedCats.includes(name)) { selectedCats = selectedCats.filter(c => c !== name); if (selectedCats.length === 0) selectedCats = ['all']; } else selectedCats.push(name); } renderFilterChips(); generateReport(); }
+    function renderFilterChips() { const wrap = document.getElementById('filterChips'); let html = `<button type="button" class="filter-chip ${selectedCats.includes('all') ? 'active' : ''}" onclick="toggleCat('all')">전체보기</button>`; html += state.categories.map(c => `<button type="button" class="filter-chip ${selectedCats.includes(c.name) ? 'active' : ''}" onclick="toggleCat(${jsArg(c.name)})">${escapeHTML(c.emoji)} ${escapeHTML(c.name)}</button>`).join(''); wrap.innerHTML = html; }
+    function openReport() { document.getElementById('reportModal').style.display = "block"; toggleCompareMode(); renderFilterChips(); }
+    function closeReport() { document.getElementById('reportModal').style.display = "none"; }
+
+    function formatKorean(amt, curr) { if (!amt) return "0원"; if (curr === 'USD') return `$${amt.toLocaleString()}`; const man = Math.floor(amt/10000), cheon = Math.floor((amt%10000)/1000); let r = (man>0?man+"만 ":"")+(cheon>0?cheon+"천":""); return r?r+"원":amt.toLocaleString()+"원"; }
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid'); const year = viewDate.getFullYear(), month = viewDate.getMonth();
+        grid.innerHTML = ['일','월','화','수','목','금','토','주 합계'].map(l => `<div style="text-align:center; font-size:0.85rem; font-weight:800; color:#adb5bd; padding-bottom:12px;">${l}</div>`).join('');
+        const firstDay = new Date(year, month, 1).getDay(), lastDate = new Date(year, month+1, 0).getDate();
+        let d = 1, mExpK=0, mIncK=0, mExpU=0, mIncU=0;
+        for (let w = 0; w < 6; w++) {
+            let wExpK=0, wIncK=0, wExpU=0, wIncU=0, hasD = false;
+            for (let i = 0; i < 7; i++) {
+                if ((w === 0 && i < firstDay) || d > lastDate) grid.innerHTML += `<div></div>`;
+                else {
+                    hasD = true; const ds = `${year}-${(month+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+                    let deK=0, diK=0, deU=0, diU=0;
+                    state.records.filter(r=>r.date===ds).forEach(r=>{
+                        if(r.type==='expense') { if(r.currency==='KRW'){deK+=r.amount; wExpK+=r.amount; mExpK+=r.amount;} else {deU+=r.amount; wExpU+=r.amount; mExpU+=r.amount;} }
+                        else { if(r.currency==='KRW'){diK+=r.amount; wIncK+=r.amount; mIncK+=r.amount;} else {diU+=r.amount; wIncU+=r.amount; mIncU+=r.amount;} }
+                    });
+                    grid.innerHTML += `<div class="cal-cell" onclick="showDetails('${ds}')"><div style="font-weight:800;">${d}</div>${deK?`<div class="cal-amt" style="color:var(--expense)">-${formatKorean(deK,'KRW')}</div>`:''}${deU?`<div class="cal-amt" style="color:var(--usd)">-$${deU}</div>`:''}${diK?`<div class="cal-amt" style="color:var(--income)">+${formatKorean(diK,'KRW')}</div>`:''}${diU?`<div class="cal-amt" style="color:var(--income)">+$${diU}</div>`:''}</div>`;
+                    d++;
+                }
+            }
+            if (hasD) grid.innerHTML += `<div class="week-total-cell"><div class="week-tag" style="background:#ffecec; color:var(--expense);">지출</div><div class="week-val" style="color:var(--expense)">-${formatKorean(wExpK,'KRW')} ${wExpU?`<br>$${wExpU}`:''}</div><div class="week-tag" style="background:#eafff0; color:var(--income); margin-top:4px;">수입</div><div class="week-val" style="color:var(--income)">+${formatKorean(wIncK,'KRW')} ${wIncU?`<br>$${wIncU}`:''}</div></div>`;
+            else if (d > lastDate) grid.innerHTML += `<div></div>`;
+            if (d > lastDate) break;
+        }
+        document.getElementById('monthExp').innerText = `${mExpK.toLocaleString()}원 / $${mExpU}`;
+        document.getElementById('monthInc').innerText = `${mIncK.toLocaleString()}원 / $${mIncU}`;
+    }
+
+    function showDetails(dateStr) {
+        const dayRecords = state.records.filter(r => r.date === dateStr); if (dayRecords.length === 0) { document.getElementById('detailPanel').style.display = 'none'; return; }
+        document.getElementById('detailPanel').style.display = 'block'; document.getElementById('detailTitle').innerText = `📅 ${dateStr} 상세 내역`;
+        document.getElementById('detailList').innerHTML = dayRecords.map(r => `<div style="background:#fff; padding:15px; border-radius:15px; border:1px solid #eee; border-left:5px solid ${r.type==='expense'?'var(--expense)':'var(--income)'}; position:relative;"><div style="font-weight:800; font-size:0.9rem;">${escapeHTML(r.cat)}</div><div style="font-weight:800; color:${r.type==='expense'?'var(--expense)':'var(--income)'}">${r.type==='expense'?'-':'+'}${r.currency==='USD'?'$':'₩'}${Number(r.amount || 0).toLocaleString()}</div>${r.memo ? `<div style="font-size:0.75rem; color:#666; margin-top:5px;">${escapeHTML(r.memo)}</div>`:''}<button onclick="deleteRecord(${Number(r.id)})" aria-label="내역 삭제" style="position:absolute; top:10px; right:10px; border:none; background:none; color:#777; cursor:pointer;">×</button></div>`).join('');
+    }
+    function addMemoItem() { const t = document.getElementById('memoItemInput').value.trim(); if(t) { state.memos.push({id:Date.now(), text:t}); document.getElementById('memoItemInput').value=''; save(); } }
+    function deleteMemo(id) { state.memos = state.memos.filter(m=>m.id!==id); save(); }
+    function renderMemos() { document.getElementById('memoList').innerHTML = (state.memos||[]).map(m=>`<div class="memo-item"><span class="memo-text">${escapeHTML(m.text)}</span><button class="memo-del" onclick="deleteMemo(${Number(m.id)})" aria-label="할 일 삭제">×</button></div>`).join(''); }
+    function formatAmount(input) { let v = input.value.replace(/[^0-9.]/g, ''); input.value = v ? Number(v).toLocaleString() : ''; }
+    function addRecord() { const a = parseFloat(document.getElementById('amountInput').value.replace(/,/g, '')); if(!a) return; state.records.push({ id: Date.now(), type: document.querySelector('.type-btn.active').dataset.type, date: document.getElementById('dateInput').value, cat: document.getElementById('catSelect').value, amount:a, currency: document.querySelector('.curr-btn.active').dataset.curr, memo: document.getElementById('memoInput').value.trim() }); document.getElementById('amountInput').value = ''; document.getElementById('memoInput').value = ''; save(); }
+    function deleteRecord(id) { if(confirm("삭제할까 바니?")) { state.records = state.records.filter(r=>r.id!==id); save(); document.getElementById('detailPanel').style.display='none'; } }
+    function addCategory() { const e = document.getElementById('newCatEmoji').value || '📍', n = document.getElementById('newCatName').value.trim(); if(n && !state.categories.some(c => c.name === n)) { state.categories.push({emoji:e, name:n}); document.getElementById('newCatEmoji').value = ''; document.getElementById('newCatName').value = ''; save(); } }
+    function setType(t) { document.querySelectorAll('.type-btn').forEach(b => { const active = b.dataset.type === t; b.classList.toggle('active', active); b.setAttribute('aria-pressed', active); }); }
+    function setCurrency(c) { document.querySelectorAll('.curr-btn').forEach(b => { const active = b.dataset.curr === c; b.classList.toggle('active', active); b.setAttribute('aria-pressed', active); }); }
+    function changeMonth(v) { viewDate.setMonth(viewDate.getMonth() + v); document.getElementById('detailPanel').style.display='none'; renderAll(); }
+    
+    function renderAll() {
+        document.getElementById('monthLabel').innerText = `${viewDate.getFullYear()}.${(viewDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        document.getElementById('catSelect').innerHTML = state.categories.map(c => `<option value="${escapeAttr(c.name)}">${escapeHTML(c.emoji)} ${escapeHTML(c.name)}</option>`).join('');
+        document.getElementById('categoryDisplay').innerHTML = state.categories.map(c => `
+            <div class="cat-tag">
+                ${escapeHTML(c.emoji)} ${escapeHTML(c.name)}
+                <button class="cat-del-btn" onclick="deleteCategory(${jsArg(c.name)})" aria-label="${escapeAttr(c.name)} 분류 삭제">×</button>
+            </div>`).join('');
+        renderMemos(); renderCalendar();
+    }
+    function exportData() { const d = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2)); const a = document.createElement('a'); const today = new Date().toISOString().slice(0, 10); a.href = d; a.download = `가계부 backup.json`; a.click(); }
+    function importData() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'application/json,.json'; i.onchange = e => { const r = new FileReader(); r.onload = re => { try { const imported = JSON.parse(re.target.result); if (!Array.isArray(imported.categories) || !Array.isArray(imported.records)) throw new Error(); state = {...DEFAULT_STATE, ...imported, memos: imported.memos || []}; save(); } catch { alert('백업 파일 형식을 확인해줘!'); } }; r.readAsText(e.target.files[0]); }; i.click(); }
+</script>
+</body>
+</html>
