@@ -930,14 +930,51 @@ window.onload = () => {
     renderAll();
     initSortable();
 
-    document.getElementById('todoInput').addEventListener('keydown', e => {
-        if (e.key === 'Enter') addTodo();
+    bindEnterSubmit('todoInput', addTodo);
+    bindEnterSubmit('somedayInput', addSomeday);
+};
+
+function bindEnterSubmit(inputId, submitAction) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    let isComposing = false;
+    let pendingSubmit = false;
+    let submitTimer = null;
+
+    const submitAfterIme = () => {
+        clearTimeout(submitTimer);
+        submitTimer = setTimeout(() => {
+            pendingSubmit = false;
+            submitAction();
+            setTimeout(() => {
+                input.value = '';
+            }, 0);
+        }, 30);
+    };
+
+    input.addEventListener('compositionstart', () => {
+        isComposing = true;
     });
 
-    document.getElementById('somedayInput').addEventListener('keydown', e => {
-        if (e.key === 'Enter') addSomeday();
+    input.addEventListener('compositionend', () => {
+        isComposing = false;
+        if (pendingSubmit) submitAfterIme();
     });
-};
+
+    input.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+
+        e.preventDefault();
+
+        if (e.isComposing || isComposing || e.keyCode === 229) {
+            pendingSubmit = true;
+            return;
+        }
+
+        submitAfterIme();
+    });
+}
 
 function save() {
     localStorage.setItem('todoRecords', JSON.stringify(todos));
