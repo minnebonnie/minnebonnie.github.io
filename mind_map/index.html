@@ -516,9 +516,42 @@
 
       .toolbar {
         justify-content: flex-start;
+        flex-wrap: nowrap;
+        gap: 8px;
         max-width: none;
         overflow-x: auto;
         padding-bottom: 2px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .toolbar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .tool-group {
+        flex: 0 0 auto;
+        flex-wrap: nowrap;
+        gap: 6px;
+      }
+
+      .tool-group + .tool-group {
+        margin-left: 2px;
+        padding-left: 8px;
+      }
+
+      .pill-button {
+        min-height: 34px;
+        padding: 0 10px;
+        font-size: 14px;
+      }
+
+      #zoomOutBtn,
+      #zoomInBtn,
+      #zoomResetBtn {
+        min-width: 42px;
+        max-width: 58px;
+        padding: 0 8px;
       }
 
       .workspace {
