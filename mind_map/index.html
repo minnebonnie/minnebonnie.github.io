@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="브라우저에 자동 저장되는 심플한 마인드맵 기록 도구">
+  <meta name="theme-color" content="#276967">
+  <meta property="og:title" content="마인드맵 기록">
+  <meta property="og:description" content="생각을 같은 분류와 소분류로 연결하고 백업할 수 있는 단일 HTML 마인드맵 앱">
+  <meta property="og:type" content="website">
+  <title>마인드맵 기록</title>
+  <style>
+    :root {
+      --bg: #f5f6f3;
+      --panel: #ffffff;
+      --panel-soft: #fbfbf8;
+      --ink: #242424;
+      --muted: #71746f;
+      --line: #bdc4bb;
+      --border: #d8dcd4;
+      --accent: #276967;
+      --accent-soft: #e8f1ef;
+      --rose: #a34f55;
+      --shadow: 0 10px 26px rgba(35, 43, 38, 0.08);
+      --node-w: 210px;
+      --node-min-h: 72px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      height: 100vh;
+      min-height: 640px;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+      padding: 20px 16px;
+      background: #e9eee9;
+      border-right: 1px solid var(--border);
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 40px;
+    }
+
+    .brand {
+      min-width: 0;
+      font-size: 20px;
+      font-weight: 730;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .icon-button {
+      display: inline-grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      flex: 0 0 auto;
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+    }
+
+    .icon-button:hover,
+    .node-action:hover,
+    .backup-btn:hover,
+    .pill-button:hover {
+      border-color: #b9b0a1;
+      filter: brightness(0.985);
+    }
+
+    .icon-button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .doc-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .backup-zone {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+      padding: 9px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 2px 8px rgba(35, 43, 38, 0.05);
+    }
+
+    .backup-btn {
+      min-height: 34px;
+      padding: 0 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .backup-btn.merge {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .backup-btn.overwrite {
+      color: var(--rose);
+    }
+
+    .doc-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 34px;
+      align-items: center;
+      gap: 6px;
+      min-height: 46px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      padding: 3px;
+    }
+
+    .doc-item:hover {
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .doc-item.active {
+      background: var(--panel);
+      border-color: var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .doc-button {
+      min-width: 0;
+      min-height: 40px;
+      padding: 7px 8px;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--ink);
+      text-align: left;
+    }
+
+    .doc-button:hover {
+      background: transparent;
+    }
+
+    .doc-delete {
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .doc-delete:hover {
+      border-color: var(--border);
+      color: var(--rose);
+      background: #fff7f7;
+    }
+
+    .doc-name {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 14px;
+      font-weight: 680;
+    }
+
+    .doc-meta {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-width: 0;
+      height: 100vh;
+      background: linear-gradient(#fbfbf8 0, #f5f6f3 230px);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: start;
+      padding: 18px 22px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(251, 251, 248, 0.9);
+      backdrop-filter: blur(12px);
+    }
+
+    .title-input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      font-size: 26px;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .title-input::placeholder {
+      color: #aaa399;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 12px;
+      min-width: 0;
+      max-width: 720px;
+    }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tool-group + .tool-group {
+      margin-left: 8px;
+      padding-left: 18px;
+      border-left: 1px solid var(--border);
+    }
+
+    .pill-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 36px;
+      max-width: 160px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    #zoomOutBtn,
+    #zoomInBtn,
+    #zoomResetBtn {
+      min-width: 44px;
+      max-width: 64px;
+      padding: 0 10px;
+    }
+
+    .pill-button.danger {
+      color: var(--rose);
+    }
+
+    .workspace-wrap {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .workspace {
+      position: relative;
+      min-width: 1180px;
+      min-height: 780px;
+    }
+
+    .map-canvas {
+      position: relative;
+      width: 1180px;
+      height: 780px;
+      transform-origin: 0 0;
+    }
+
+    .empty-state {
+      position: absolute;
+      left: 50%;
+      top: 44%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translate(-50%, -50%);
+      color: var(--muted);
+    }
+
+    .empty-state .pill-button {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .lines {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .line-path {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .node {
+      position: absolute;
+      width: var(--node-w);
+      min-height: var(--node-min-h);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .node.favorite {
+      border-color: #c7a74c;
+      box-shadow: 0 10px 28px rgba(128, 99, 26, 0.16);
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      min-height: 34px;
+      padding: 6px 7px 0 10px;
+    }
+
+    .node-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+    }
+
+    .node-action {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .node-action.favorite-on {
+      color: #9a7819;
+      background: #fff5cf;
+    }
+
+    .node-action:focus-visible,
+    .pill-button:focus-visible,
+    .icon-button:focus-visible,
+    .doc-button:focus-visible,
+    .node-text:focus-visible {
+      outline: 3px solid rgba(39, 105, 103, 0.25);
+      outline-offset: 2px;
+    }
+
+    .node-text {
+      display: block;
+      width: 100%;
+      min-height: 42px;
+      max-height: 190px;
+      padding: 0 11px 11px;
+      border: 0;
+      outline: 0;
+      resize: none;
+      overflow: hidden;
+      background: transparent;
+      color: var(--ink);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .node-text::placeholder {
+      color: #aaa399;
+    }
+
+    .selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(39, 105, 103, 0.16), var(--shadow);
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 5;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #202020;
+      color: #fff;
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 160ms ease, transform 160ms ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 860px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+        padding: 14px;
+      }
+
+      .doc-list {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(160px, 210px);
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .backup-zone {
+        grid-template-columns: repeat(3, minmax(88px, 1fr));
+      }
+
+      .main {
+        height: calc(100vh - 142px);
+        min-height: 560px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        padding: 14px;
+      }
+
+      .title-input {
+        font-size: 22px;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+        max-width: none;
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .workspace {
+        min-width: 920px;
+        min-height: 680px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="기록 목록">
+      <div class="brand-row">
+        <div class="brand">마인드맵 기록</div>
+        <button class="icon-button primary" id="newDocBtn" type="button" title="새 창">+</button>
+      </div>
+      <div class="doc-list" id="docList"></div>
+      <div class="backup-zone">
+        <button class="backup-btn" id="backupBtn" type="button">백업</button>
+        <button class="backup-btn merge" id="mergeBtn" type="button">통합</button>
+        <button class="backup-btn overwrite" id="overwriteBtn" type="button">불러오기</button>
+        <input id="importMergeFile" type="file" accept="application/json,.json" hidden>
+        <input id="importOverwriteFile" type="file" accept="application/json,.json" hidden>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <input class="title-input" id="titleInput" type="text" placeholder="제목" autocomplete="off">
+        <div class="toolbar">
+          <div class="tool-group" aria-label="보기 배율">
+            <button class="pill-button" id="zoomOutBtn" type="button">−</button>
+            <button class="pill-button" id="zoomResetBtn" type="button">100%</button>
+            <button class="pill-button" id="zoomInBtn" type="button">＋</button>
+          </div>
+          <div class="tool-group" aria-label="생각 편집">
+            <button class="pill-button" id="addSiblingBtn" type="button">+ 같은 분류</button>
+            <button class="pill-button" id="addChildBtn" type="button">+ 소분류</button>
+            <button class="pill-button danger" id="deleteNodeBtn" type="button">삭제</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="workspace-wrap" id="workspaceWrap" aria-label="마인드맵 공간">
+        <div class="workspace" id="workspace">
+          <div class="map-canvas" id="mapCanvas">
+            <svg class="lines" id="lines"></svg>
+            <div id="nodes"></div>
+            <div class="empty-state" id="emptyState">
+              <button class="pill-button" id="emptyAddBtn" type="button">+ 첫 생각</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "simple-mindmap-docs-v1";
+    const NODE_WIDTH = 210;
+    const X_GAP = 280;
+    const Y_GAP = 118;
+    const START_X = 70;
+    const START_Y = 60;
+
+    const docList = document.querySelector("#docList");
+    const titleInput = document.querySelector("#titleInput");
+    const workspace = document.querySelector("#workspace");
+    const mapCanvas = document.querySelector("#mapCanvas");
+    const workspaceWrap = document.querySelector("#workspaceWrap");
+    const lines = document.querySelector("#lines");
+    const nodesLayer = document.querySelector("#nodes");
+    const emptyState = document.querySelector("#emptyState");
+    const toast = document.querySelector("#toast");
+    const zoomResetBtn = document.querySelector("#zoomResetBtn");
+    const importMergeFile = document.querySelector("#importMergeFile");
+    const importOverwriteFile = document.querySelector("#importOverwriteFile");
+
+    const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+    let state = loadState();
+    let activeDocId = state.activeDocId || state.docs[0].id;
+    let selectedNodeId = state.docs.find((doc) => doc.id === activeDocId)?.selectedNodeId || null;
+    let zoom = 1;
+    let saveTimer = null;
+
+    function createDoc(title = "새 마인드맵") {
+      const now = Date.now();
+      const rootId = uid();
+      return {
+        id: uid(),
+        title,
+        createdAt: now,
+        updatedAt: now,
+        selectedNodeId: rootId,
+        nodes: [
+          {
+            id: rootId,
+            parentId: null,
+            text: "",
+            favorite: false,
+            createdAt: now
+          }
+        ]
+      };
+    }
+
+    function normalizeDoc(doc) {
+      const nodes = Array.isArray(doc.nodes) ? doc.nodes : [];
+      const nodeTimes = nodes
+        .map((node) => Number(node.createdAt))
+        .filter((time) => Number.isFinite(time) && time > 0);
+      const fallbackCreatedAt = nodeTimes.length
+        ? Math.min(...nodeTimes)
+        : Number(doc.createdAt || doc.updatedAt || Date.now());
+
+      return {
+        ...doc,
+        createdAt: Number(doc.createdAt) || fallbackCreatedAt,
+        updatedAt: Number(doc.updatedAt) || fallbackCreatedAt,
+        nodes: nodes.map((node) => ({
+          ...node,
+          createdAt: Number(node.createdAt) || fallbackCreatedAt
+        }))
+      };
+    }
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (saved?.docs?.length) {
+          return {
+            ...saved,
+            docs: saved.docs.map(normalizeDoc)
+          };
+        }
+      } catch (error) {
+        console.warn(error);
+      }
+      const firstDoc = createDoc("첫 마인드맵");
+      return { activeDocId: firstDoc.id, docs: [firstDoc] };
+    }
+
+    function activeDoc() {
+      return state.docs.find((doc) => doc.id === activeDocId) || state.docs[0];
+    }
+
+    function scheduleSave() {
+      const doc = activeDoc();
+      doc.updatedAt = Date.now();
+      doc.selectedNodeId = selectedNodeId;
+      state.activeDocId = activeDocId;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveNow, 120);
+    }
+
+    function saveNow() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderDocList();
+    }
+
+    function formatDate(timestamp) {
+      return new Intl.DateTimeFormat("ko-KR", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(timestamp);
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 1200);
+    }
+
+    function renderDocList() {
+      docList.innerHTML = "";
+      const docs = [...state.docs].sort((a, b) => b.updatedAt - a.updatedAt);
+
+      docs.forEach((doc) => {
+        const item = document.createElement("div");
+        item.className = `doc-item${doc.id === activeDocId ? " active" : ""}`;
+        item.dataset.id = doc.id;
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "doc-button";
+        button.dataset.id = doc.id;
+        button.innerHTML = `
+          <span class="doc-name">${escapeHtml(doc.title || "제목 없음")}</span>
+          <span class="doc-meta">${doc.nodes.length}개 · ${formatDate(doc.createdAt)}</span>
+        `;
+        item.appendChild(button);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "doc-delete";
+        deleteButton.dataset.id = doc.id;
+        deleteButton.title = "마인드맵 삭제";
+        deleteButton.textContent = "×";
+        item.appendChild(deleteButton);
+
+        docList.appendChild(item);
+      });
+    }
+
+    function render() {
+      const doc = activeDoc();
+      titleInput.value = doc.title || "";
+      selectedNodeId = doc.nodes.some((node) => node.id === selectedNodeId)
+        ? selectedNodeId
+        : doc.nodes[0]?.id || null;
+
+      renderDocList();
+      renderMap(doc);
+      scheduleSave();
+    }
+
+    function renderMap(doc) {
+      nodesLayer.innerHTML = "";
+      lines.innerHTML = "";
+      emptyState.style.display = doc.nodes.length ? "none" : "flex";
+
+      const layout = buildLayout(doc.nodes);
+      const maxX = Math.max(...Object.values(layout).map((item) => item.x + NODE_WIDTH + 140), 1180);
+      const maxY = Math.max(...Object.values(layout).map((item) => item.y + 150), 780);
+      mapCanvas.style.width = `${maxX}px`;
+      mapCanvas.style.height = `${maxY}px`;
+      applyZoom(maxX, maxY);
+      lines.setAttribute("viewBox", `0 0 ${maxX} ${maxY}`);
+
+      doc.nodes.forEach((node) => {
+        const position = layout[node.id];
+        if (!position) return;
+        const el = document.createElement("article");
+        el.className = `node${node.favorite ? " favorite" : ""}${node.id === selectedNodeId ? " selected" : ""}`;
+        el.dataset.id = node.id;
+        el.style.left = `${position.x}px`;
+        el.style.top = `${position.y}px`;
+        el.innerHTML = `
+          <div class="node-header">
+            <div class="node-actions">
+              <button class="node-action favorite-toggle${node.favorite ? " favorite-on" : ""}" type="button" title="즐겨찾기">${node.favorite ? "★" : "☆"}</button>
+              <button class="node-action add-sibling" type="button" title="같은 분류 추가">↵</button>
+              <button class="node-action add-child" type="button" title="소분류 추가">＋</button>
+              <button class="node-action delete-node" type="button" title="삭제">×</button>
+            </div>
+          </div>
+          <textarea class="node-text" placeholder="생각">${escapeHtml(node.text)}</textarea>
+        `;
+        nodesLayer.appendChild(el);
+        const textarea = el.querySelector(".node-text");
+        autoGrow(textarea);
+      });
+
+      doc.nodes.forEach((node) => {
+        if (!node.parentId || !layout[node.parentId] || !layout[node.id]) return;
+        const from = layout[node.parentId];
+        const to = layout[node.id];
+        drawLine(from.x + NODE_WIDTH, from.y + 47, to.x, to.y + 47);
+      });
+    }
+
+    function buildLayout(nodes) {
+      const byParent = new Map();
+      const byId = new Map();
+      nodes.forEach((node) => {
+        byId.set(node.id, node);
+        const key = node.parentId || "root";
+        if (!byParent.has(key)) byParent.set(key, []);
+        byParent.get(key).push(node);
+      });
+
+      const layout = {};
+      let cursor = START_Y;
+
+      function place(node, depth) {
+        const children = byParent.get(node.id) || [];
+        if (!children.length) {
+          layout[node.id] = { x: START_X + depth * X_GAP, y: cursor, depth };
+          cursor += Y_GAP;
+          return layout[node.id].y;
+        }
+
+        const childYs = children.map((child) => place(child, depth + 1));
+        const y = (childYs[0] + childYs[childYs.length - 1]) / 2;
+        layout[node.id] = { x: START_X + depth * X_GAP, y, depth };
+        return y;
+      }
+
+      const roots = byParent.get("root") || [];
+      roots.forEach((root) => place(root, 0));
+      return layout;
+    }
+
+    function drawLine(x1, y1, x2, y2) {
+      const mid = x1 + (x2 - x1) * 0.5;
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("class", "line-path");
+      path.setAttribute("d", `M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`);
+      lines.appendChild(path);
+    }
+
+    function applyZoom(width = mapCanvas.offsetWidth, height = mapCanvas.offsetHeight) {
+      mapCanvas.style.transform = `scale(${zoom})`;
+      workspace.style.width = `${Math.max(width * zoom, 920)}px`;
+      workspace.style.height = `${Math.max(height * zoom, 680)}px`;
+      zoomResetBtn.textContent = `${Math.round(zoom * 100)}%`;
+    }
+
+    function setZoom(nextZoom) {
+      zoom = Math.min(1.8, Math.max(0.45, nextZoom));
+      applyZoom();
+    }
+
+    function markSelectedNode(id) {
+      selectedNodeId = id;
+      activeDoc().selectedNodeId = id;
+      nodesLayer.querySelectorAll(".node").forEach((nodeEl) => {
+        nodeEl.classList.toggle("selected", nodeEl.dataset.id === id);
+      });
+    }
+
+    function selectNode(id) {
+      selectedNodeId = id;
+      activeDoc().selectedNodeId = id;
+      renderMap(activeDoc());
+      scheduleSave();
+    }
+
+    function addNode(parentId) {
+      const doc = activeDoc();
+      const newNode = {
+        id: uid(),
+        parentId,
+        text: "",
+        favorite: false,
+        createdAt: Date.now()
+      };
+      doc.nodes.push(newNode);
+      selectedNodeId = newNode.id;
+      render();
+      requestAnimationFrame(() => {
+        const el = nodesLayer.querySelector(`[data-id="${newNode.id}"]`);
+        el?.querySelector("textarea")?.focus();
+        el?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+      });
+    }
+
+    function addSibling() {
+      const doc = activeDoc();
+      const selected = doc.nodes.find((node) => node.id === selectedNodeId);
+      if (!selected) return addNode(null);
+      addNode(selected.parentId);
+    }
+
+    function addChild() {
+      const doc = activeDoc();
+      if (!selectedNodeId && doc.nodes.length) selectedNodeId = doc.nodes[0].id;
+      addNode(selectedNodeId || null);
+    }
+
+    function deleteSelected() {
+      deleteNode(selectedNodeId);
+    }
+
+    function deleteNode(nodeId) {
+      const doc = activeDoc();
+      if (!nodeId) return;
+      const selected = doc.nodes.find((node) => node.id === nodeId);
+      if (!selected) return;
+
+      const toDelete = new Set([nodeId]);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        doc.nodes.forEach((node) => {
+          if (node.parentId && toDelete.has(node.parentId) && !toDelete.has(node.id)) {
+            toDelete.add(node.id);
+            changed = true;
+          }
+        });
+      }
+
+      doc.nodes = doc.nodes.filter((node) => !toDelete.has(node.id));
+      selectedNodeId = selected.parentId || doc.nodes[0]?.id || null;
+      render();
+      showToast("삭제했어요");
+    }
+
+    function deleteDoc(docId) {
+      const doc = state.docs.find((item) => item.id === docId);
+      if (!doc) return;
+      if (!confirm(`"${doc.title || "제목 없음"}" 마인드맵을 삭제할까?`)) return;
+
+      state.docs = state.docs.filter((item) => item.id !== docId);
+      if (!state.docs.length) {
+        const nextDoc = createDoc();
+        state.docs.push(nextDoc);
+      }
+
+      if (activeDocId === docId) {
+        activeDocId = state.docs[0].id;
+        selectedNodeId = state.docs[0].selectedNodeId || state.docs[0].nodes[0]?.id || null;
+      }
+
+      render();
+      showToast("마인드맵을 삭제했어요");
+    }
+
+    function autoGrow(textarea) {
+      textarea.style.height = "0";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 190)}px`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function backupState() {
+      saveNow();
+      const payload = {
+        app: "Simple Mindmap",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        docs: state.docs
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "마인드맵 백업.json";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      showToast("백업 파일을 만들었어요");
+    }
+
+    function getImportedData(parsed) {
+      if (!parsed) return null;
+      if (Array.isArray(parsed.docs)) return { docs: parsed.docs };
+      if (Array.isArray(parsed)) return { docs: parsed };
+      return null;
+    }
+
+    function normalizeImportedDocs(raw) {
+      const docs = Array.isArray(raw?.docs) ? raw.docs : [];
+      return docs
+        .filter((doc) => Array.isArray(doc.nodes))
+        .map((doc) => {
+          const idMap = new Map();
+          doc.nodes.forEach((node) => idMap.set(String(node.id || uid()), uid()));
+          const nodes = doc.nodes.map((node) => {
+            const oldId = String(node.id || uid());
+            if (!idMap.has(oldId)) idMap.set(oldId, uid());
+            return {
+            id: idMap.get(oldId),
+            parentId: node.parentId ? idMap.get(String(node.parentId)) || null : null,
+            text: String(node.text || ""),
+            favorite: Boolean(node.favorite),
+            createdAt: Number(node.createdAt) || Date.now()
+            };
+          });
+          const nodeTimes = nodes
+            .map((node) => Number(node.createdAt))
+            .filter((time) => Number.isFinite(time) && time > 0);
+          const createdAt = Number(doc.createdAt) || (nodeTimes.length ? Math.min(...nodeTimes) : Date.now());
+
+          return {
+            id: uid(),
+            title: String(doc.title || "불러온 마인드맵"),
+            createdAt,
+            updatedAt: Number(doc.updatedAt) || Date.now(),
+            selectedNodeId: nodes[0]?.id || null,
+            nodes
+          };
+        })
+        .filter((doc) => doc.nodes.length);
+    }
+
+    function makeDocKey(doc) {
+      const byParent = new Map();
+      doc.nodes.forEach((node) => {
+        const key = node.parentId || "root";
+        if (!byParent.has(key)) byParent.set(key, []);
+        byParent.get(key).push(node);
+      });
+
+      const serialize = (node) => ({
+        text: String(node.text || "").trim().toLowerCase(),
+        favorite: Boolean(node.favorite),
+        children: (byParent.get(node.id) || []).map(serialize)
+      });
+
+      const tree = (byParent.get("root") || []).map(serialize);
+      return `${String(doc.title || "").trim().toLowerCase()}::${JSON.stringify(tree)}`;
+    }
+
+    function readBackupFile(file, onLoad, onErrorMessage) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          const raw = getImportedData(parsed);
+          if (!raw) {
+            alert(onErrorMessage);
+            return;
+          }
+          onLoad(normalizeImportedDocs(raw));
+        } catch (error) {
+          console.warn(error);
+          alert("파일 확인해줘 ㅠㅠ");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function mergeBackup(event) {
+      const file = event.target.files[0];
+      readBackupFile(file, (importedDocs) => {
+        if (!importedDocs.length) {
+          alert("통합할 수 있는 마인드맵 기록이 없어 ㅠㅠ");
+          return;
+        }
+        if (!confirm("현재 기록은 유지하고, 이 백업 파일의 마인드맵을 합칠까?")) return;
+
+        const docMap = new Map();
+        state.docs.forEach((doc) => docMap.set(makeDocKey(doc), doc));
+
+        let added = 0;
+        let skipped = 0;
+        importedDocs.forEach((doc) => {
+          const key = makeDocKey(doc);
+          if (docMap.has(key)) {
+            skipped++;
+          } else {
+            docMap.set(key, doc);
+            added++;
+          }
+        });
+
+        state.docs = Array.from(docMap.values()).sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt));
+        if (added > 0) {
+          activeDocId = importedDocs.find((doc) => docMap.get(makeDocKey(doc)) === doc)?.id || activeDocId;
+          selectedNodeId = activeDoc().selectedNodeId || activeDoc().nodes[0]?.id || null;
+        }
+        render();
+        alert(`통합 완료! 마인드맵 ${added}개를 추가했어.${skipped ? ` 중복 ${skipped}개는 건너뛰었어.` : ""}`);
+      }, "통합할 수 있는 백업 파일이 아니야 ㅠㅠ");
+      event.target.value = "";
+    }
+
+    function overwriteBackup(event) {
+      const file = event.target.files[0];
+      readBackupFile(file, (importedDocs) => {
+        if (!importedDocs.length) {
+          alert("불러올 수 있는 마인드맵 기록이 없어 ㅠㅠ");
+          return;
+        }
+        if (!confirm("불러오면 현재 마인드맵 기록이 백업 파일 내용으로 교체돼. 계속할까?")) return;
+
+        state.docs = importedDocs;
+        activeDocId = state.docs[0].id;
+        selectedNodeId = state.docs[0].selectedNodeId || state.docs[0].nodes[0]?.id || null;
+        render();
+        alert("불러오기 완료!");
+      }, "불러올 수 있는 백업 파일이 아니야 ㅠㅠ");
+      event.target.value = "";
+    }
+
+    document.querySelector("#newDocBtn").addEventListener("click", () => {
+      const doc = createDoc();
+      state.docs.push(doc);
+      activeDocId = doc.id;
+      selectedNodeId = doc.selectedNodeId;
+      render();
+      titleInput.focus();
+      titleInput.select();
+    });
+
+    document.querySelector("#addSiblingBtn").addEventListener("click", addSibling);
+    document.querySelector("#addChildBtn").addEventListener("click", addChild);
+    document.querySelector("#deleteNodeBtn").addEventListener("click", deleteSelected);
+    document.querySelector("#emptyAddBtn").addEventListener("click", () => addNode(null));
+    document.querySelector("#zoomOutBtn").addEventListener("click", () => setZoom(zoom - 0.1));
+    document.querySelector("#zoomInBtn").addEventListener("click", () => setZoom(zoom + 0.1));
+    zoomResetBtn.addEventListener("click", () => setZoom(1));
+    document.querySelector("#backupBtn").addEventListener("click", backupState);
+    document.querySelector("#mergeBtn").addEventListener("click", () => importMergeFile.click());
+    document.querySelector("#overwriteBtn").addEventListener("click", () => importOverwriteFile.click());
+    importMergeFile.addEventListener("change", mergeBackup);
+    importOverwriteFile.addEventListener("change", overwriteBackup);
+
+    docList.addEventListener("click", (event) => {
+      const deleteButton = event.target.closest(".doc-delete");
+      if (deleteButton) {
+        deleteDoc(deleteButton.dataset.id);
+        return;
+      }
+
+      const button = event.target.closest(".doc-button");
+      if (!button) return;
+      activeDocId = button.dataset.id;
+      selectedNodeId = activeDoc().selectedNodeId || activeDoc().nodes[0]?.id || null;
+      render();
+    });
+
+    titleInput.addEventListener("input", () => {
+      const doc = activeDoc();
+      doc.title = titleInput.value.trimStart() || "제목 없음";
+      scheduleSave();
+      renderDocList();
+    });
+
+    nodesLayer.addEventListener("click", (event) => {
+      const nodeEl = event.target.closest(".node");
+      if (!nodeEl) return;
+      const doc = activeDoc();
+      const node = doc.nodes.find((item) => item.id === nodeEl.dataset.id);
+      if (!node) return;
+      markSelectedNode(node.id);
+
+      if (event.target.closest(".favorite-toggle")) {
+        node.favorite = !node.favorite;
+        render();
+        return;
+      }
+      if (event.target.closest(".delete-node")) {
+        deleteNode(node.id);
+        return;
+      }
+      if (event.target.closest(".add-child")) {
+        addNode(node.id);
+        return;
+      }
+      if (event.target.closest(".add-sibling")) {
+        addNode(node.parentId);
+        return;
+      }
+      scheduleSave();
+    });
+
+    nodesLayer.addEventListener("input", (event) => {
+      const textarea = event.target.closest(".node-text");
+      if (!textarea) return;
+      const nodeEl = textarea.closest(".node");
+      const node = activeDoc().nodes.find((item) => item.id === nodeEl.dataset.id);
+      if (!node) return;
+      selectedNodeId = node.id;
+      node.text = textarea.value;
+      autoGrow(textarea);
+      scheduleSave();
+    });
+
+    nodesLayer.addEventListener("keydown", (event) => {
+      if (!event.target.matches(".node-text")) return;
+      if (event.metaKey || event.ctrlKey) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addChild();
+        }
+        if (event.key.toLowerCase() === "j") {
+          event.preventDefault();
+          addSibling();
+        }
+      }
+      if (event.key === "Backspace" && event.target.value === "") {
+        const doc = activeDoc();
+        if (doc.nodes.length > 1) {
+          event.preventDefault();
+          deleteSelected();
+        }
+      }
+    });
+
+    window.addEventListener("beforeunload", saveNow);
+
+    render();
+    setTimeout(() => {
+      workspaceWrap.scrollLeft = 0;
+      workspaceWrap.scrollTop = 0;
+    }, 0);
+  </script>
+</body>
+</html>
