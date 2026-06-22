@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="미국 주식 매매 기록, 보유 현황, 가격 기록 그래프, 투자 공부일지를 관리하는 브라우저 기반 투자일지입니다.">
+    <title>미국 주식 투자일지</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
+        :root {
+            --buy: #00b84a;
+            --sell: #d94f2b;
+            --watch: #008f63;
+            --bg: #f5fbf6;
+            --card: #ffffff;
+            --text: #07130a;
+            --muted: #53615a;
+            --border: #dbe8dd;
+            --soft: #edf8ef;
+            --deep: #003c2f;
+            --deep-2: #00523f;
+            --deep-3: #064a3a;
+            --green-soft: #e5f9e7;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 18px;
+            color: var(--text);
+        }
+        .container {
+            max-width: 1480px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 320px minmax(620px, 1fr) 340px;
+            gap: 18px;
+            align-items: start;
+        }
+        .card {
+            background: var(--card);
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(0, 60, 47, 0.06);
+            margin-bottom: 18px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+        h2 {
+            margin: 0 0 14px 0;
+            font-size: 1rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin: 16px 0 18px;
+        }
+        .metric {
+            background: var(--deep);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 96px;
+        }
+        .metric:nth-child(2) { background: var(--deep-2); }
+        .metric:nth-child(3) { background: var(--deep-3); }
+        .metric-label {
+            color: rgba(255,255,255,0.72);
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .metric-value {
+            font-size: 1.45rem;
+            font-weight: 800;
+            word-break: break-word;
+        }
+        .metric-sub {
+            margin-top: 5px;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.72);
+        }
+        .metric .up { color: #b8f5c8 !important; }
+        .metric .down { color: #ffc9b8 !important; }
+        .input-group { display: flex; flex-direction: column; gap: 10px; }
+        input, select, textarea {
+            width: 100%;
+            padding: 11px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: var(--text);
+            background: white;
+        }
+        textarea { min-height: 86px; resize: vertical; }
+        .btn-row { display: flex; gap: 6px; }
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-weight: 800;
+            background: #fff;
+            color: var(--text);
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+        .btn.active[data-type="buy"] { background: var(--buy); color: white; border-color: var(--buy); }
+        .btn.active[data-type="sell"] { background: var(--sell); color: white; border-color: var(--sell); }
+        .btn.active[data-type="watch"] { background: var(--watch); color: white; border-color: var(--watch); }
+        .submit-btn {
+            background: var(--deep);
+            color: white;
+            border: none;
+            padding: 13px;
+            border-radius: 8px;
+            font-weight: 800;
+            cursor: pointer;
+            width: 100%;
+        }
+        .ghost-btn {
+            background: white;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .back-btn {
+            background: var(--watch);
+            color: white;
+            border-color: var(--watch);
+            box-shadow: 0 6px 14px rgba(0, 143, 99, 0.16);
+        }
+        .back-btn:hover { background: #007f58; }
+        .portfolio-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        .portfolio-table th {
+            color: var(--muted);
+            font-size: 0.72rem;
+            text-align: right;
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .portfolio-table th:first-child,
+        .portfolio-table td:first-child { text-align: center; width: 4%; }
+        .portfolio-table th:nth-child(2), .portfolio-table td:nth-child(2) { text-align: left; width: 18%; }
+        .portfolio-table th:nth-child(3), .portfolio-table td:nth-child(3) { width: 8%; }
+        .portfolio-table th:nth-child(4), .portfolio-table td:nth-child(4) { width: 10%; }
+        .portfolio-table th:nth-child(5), .portfolio-table td:nth-child(5) { width: 13%; }
+        .portfolio-table th:nth-child(6), .portfolio-table td:nth-child(6) { width: 12%; }
+        .portfolio-table th:nth-child(7), .portfolio-table td:nth-child(7) { width: 13%; }
+        .portfolio-table th:nth-child(8), .portfolio-table td:nth-child(8) { width: 12%; }
+        .portfolio-table th:nth-child(9), .portfolio-table td:nth-child(9) { width: 10%; }
+        .portfolio-table td {
+            padding: 11px 8px;
+            border-bottom: 1px solid var(--border);
+            text-align: right;
+            font-size: 0.88rem;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .portfolio-table tr {
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .portfolio-table tr:hover { background: #f5fbf6; }
+        .portfolio-table tr.selected { background: var(--green-soft); }
+        .portfolio-table tr.dragging { opacity: 0.45; }
+        .portfolio-table tr.drag-over { outline: 2px solid var(--buy); outline-offset: -2px; }
+        .drag-handle {
+            color: #9ca3af;
+            cursor: grab;
+            font-size: 0.82rem;
+            margin-right: 6px;
+            user-select: none;
+        }
+        .ticker {
+            font-size: 1rem;
+            font-weight: 800;
+            display: block;
+        }
+        .subtle {
+            color: var(--muted);
+            font-size: 0.74rem;
+            margin-top: 3px;
+            display: block;
+        }
+        .price-input {
+            text-align: right;
+            padding: 10px 11px;
+            font-weight: 800;
+            width: 118px;
+            max-width: 100%;
+            font-size: 0.95rem;
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+        .price-input::-webkit-outer-spin-button,
+        .price-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .table-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+            margin: 0 0 12px;
+        }
+        .action-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .check-input {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--watch);
+            cursor: pointer;
+        }
+        .chart-canvas {
+            width: 100%;
+            height: 320px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fbfffc;
+        }
+        .chart-record {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+            background: #fbfffc;
+            font-size: 0.84rem;
+        }
+        .chart-record-actions {
+            display: flex;
+            gap: 4px;
+        }
+        .up { color: var(--buy) !important; }
+        .down { color: var(--sell) !important; }
+        .muted { color: var(--muted); }
+        .empty-state {
+            padding: 44px 18px;
+            text-align: center;
+            color: var(--muted);
+            font-weight: 800;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            background: #fbfffc;
+        }
+        .tag-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+        .tag {
+            background: var(--soft);
+            padding: 6px 9px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tag span { color: #9ca3af; cursor: pointer; }
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 0 0 14px;
+        }
+        .filter-chip {
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--muted);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 0.76rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .filter-chip.active {
+            background: var(--deep);
+            color: white;
+            border-color: var(--deep);
+        }
+        .calendar-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .calendar-title {
+            font-weight: 800;
+            font-size: 0.95rem;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .calendar-weekday {
+            color: var(--muted);
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-align: center;
+            padding: 4px 0;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            border: 1px solid transparent;
+            background: #fbfffc;
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 800;
+            position: relative;
+        }
+        .calendar-day:hover { border-color: var(--border); background: var(--soft); }
+        .calendar-day.selected { background: var(--deep); color: white; }
+        .calendar-day.today { border-color: var(--buy); }
+        .calendar-day.has-log::after {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--buy);
+            position: absolute;
+            left: 50%;
+            bottom: 5px;
+            transform: translateX(-50%);
+        }
+        .calendar-day.selected.has-log::after { background: white; }
+        .calendar-day.blank {
+            background: transparent;
+            pointer-events: none;
+        }
+        .study-log-item,
+        .compact-row {
+            border: 1px solid var(--border);
+            background: #fbfffc;
+            border-radius: 8px;
+        }
+        .study-log-item {
+            padding: 14px 92px 14px 42px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .study-list-panel {
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+        .study-list-item {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fbfffc;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px;
+            align-items: start;
+            cursor: pointer;
+        }
+        .study-list-item:hover { background: var(--soft); }
+        .star-btn {
+            border: none;
+            background: transparent;
+            color: #a3aaa6;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 800;
+            padding: 0;
+            line-height: 1.2;
+        }
+        .star-btn.active { color: #00a36c; }
+        .study-list-title {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 3px;
+        }
+        .study-list-preview {
+            color: var(--muted);
+            font-size: 0.76rem;
+            line-height: 1.35;
+        }
+        .compact-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .compact-row {
+            padding: 10px;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .compact-label {
+            color: var(--muted);
+            font-size: 0.73rem;
+            font-weight: 800;
+        }
+        .compact-value {
+            font-size: 0.95rem;
+            font-weight: 800;
+            text-align: right;
+        }
+        .compact-stock-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .compact-stock {
+            border: 1px solid var(--border);
+            background: #fbfffc;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .compact-stock-top,
+        .compact-stock-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .compact-stock-top {
+            margin-bottom: 5px;
+            font-weight: 800;
+        }
+        .compact-stock-bottom {
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+        .history-item {
+            font-size: 0.83rem;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: 56px 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-detail {
+            color: var(--muted);
+            overflow-wrap: normal;
+            word-break: keep-all;
+        }
+        .history-cat {
+            white-space: nowrap;
+            word-break: keep-all;
+        }
+        .history-actions {
+            display: flex;
+            gap: 4px;
+        }
+        .mini-btn {
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 6px;
+            padding: 5px 7px;
+            cursor: pointer;
+            font-weight: 800;
+            color: var(--muted);
+            font-size: 0.72rem;
+        }
+        .profit-badge {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            text-align: center;
+            font-weight: 800;
+            border: 1px solid var(--border);
+            background: #fbfffc;
+        }
+        .log-card {
+            background: #fbfffc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 0.84rem;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        .del-x {
+            color: #9ca3af;
+            cursor: pointer;
+            font-weight: 800;
+            border: none;
+            background: transparent;
+        }
+        .inline-row {
+            display: flex;
+            gap: 6px;
+        }
+        .inline-row input { flex: 1; }
+
+        .multi-cat-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fbfffc;
+        }
+        .multi-cat-chip {
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--muted);
+            border-radius: 999px;
+            padding: 8px 10px;
+            font-size: 0.76rem;
+            font-weight: 800;
+            cursor: pointer;
+            user-select: none;
+        }
+        .multi-cat-chip.active {
+            background: var(--deep);
+            color: white;
+            border-color: var(--deep);
+        }
+        .multi-cat-help {
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            margin-top: -4px;
+        }
+
+        @media (max-width: 1180px) {
+            .container { grid-template-columns: 300px 1fr; }
+            .right-panel { grid-column: 1 / -1; }
+        }
+        @media (max-width: 820px) {
+            body { padding: 10px; }
+            .container { display: block; }
+            .summary-grid { grid-template-columns: 1fr; }
+            .card { padding: 14px; }
+            .portfolio-table { min-width: 880px; }
+            .table-scroll { overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="left-panel">
+        <div class="card">
+            <h2>매매 및 주시 기록</h2>
+            <div class="input-group">
+                <div class="btn-row">
+                    <button class="btn active" data-type="buy" onclick="setType('buy')">매수</button>
+                    <button class="btn" data-type="sell" onclick="setType('sell')">매도</button>
+                    <button class="btn" data-type="watch" onclick="setType('watch')">주시</button>
+                </div>
+                <input type="hidden" id="editingTradeId">
+                <input type="date" id="tradeDate">
+                <input type="text" id="stockName" placeholder="종목명 / 티커">
+                <input type="number" step="any" id="stockQty" placeholder="수량">
+                <input type="number" step="any" id="stockPrice" placeholder="단가 ($)">
+                <div id="catSelect" class="multi-cat-box"></div>
+                <div class="multi-cat-help">분류는 여러 개 선택할 수 있어요.</div>
+                <button class="submit-btn" id="tradeSubmitBtn" onclick="saveTrade()">기록 저장하기</button>
+                <button class="ghost-btn" id="cancelEditBtn" style="display:none;" onclick="cancelTradeEdit()">수정 취소</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>분류 및 데이터 관리</h2>
+            <div class="inline-row" style="margin-bottom:12px;">
+                <input type="text" id="newCat" placeholder="새 섹터 이름">
+                <button class="ghost-btn" onclick="addCategory()" style="width:44px; padding:0;">+</button>
+            </div>
+            <div id="categoryTags" class="tag-wrap"></div>
+            <div class="btn-row">
+                <button class="btn" onclick="exportData()">백업</button>
+                <button class="btn" onclick="importData()">불러오기</button>
+            </div>
+            <button class="ghost-btn" onclick="resetAllData()" style="width:100%; margin-top:8px; color:var(--sell); border-color:#fecaca;">초기화</button>
+        </div>
+
+        <div class="card">
+            <h2>공부 일지 캘린더</h2>
+            <div class="calendar-head">
+                <button class="mini-btn" onclick="moveStudyMonth(-1)">‹</button>
+                <div id="calendarTitle" class="calendar-title"></div>
+                <button class="mini-btn" onclick="moveStudyMonth(1)">›</button>
+            </div>
+            <div id="studyCalendar" class="calendar-grid"></div>
+            <div style="margin-top:12px;">
+                <div class="subtle" id="selectedStudyDateText"></div>
+                <button class="submit-btn" onclick="openStudyLog()" style="margin-top:8px;">메모 기록 추가</button>
+            </div>
+            <div class="study-list-panel">
+                <h2 style="margin-bottom:10px;">공부일지 기록</h2>
+                <div class="filter-bar">
+                    <button id="studyListAllBtn" class="filter-chip active" onclick="setStudyListFilter('all')">전체</button>
+                    <button id="studyListFavBtn" class="filter-chip" onclick="setStudyListFilter('favorite')">즐겨찾기</button>
+                </div>
+                <div id="studyEntryList"></div>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-panel">
+        <div id="portfolioView" class="card">
+            <h1>투자 현황판</h1>
+            <div class="summary-grid">
+                <div class="metric">
+                    <div class="metric-label">투자금액</div>
+                    <div id="totalCost" class="metric-value">$0.00</div>
+                    <div id="holdingCount" class="metric-sub">보유 종목 0개</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">현재 평가액</div>
+                    <div id="totalValue" class="metric-value">$0.00</div>
+                    <div class="metric-sub">오늘 가격 입력 기준</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">전체 미실현 손익</div>
+                    <div id="totalPnl" class="metric-value">$0.00</div>
+                    <div id="totalPnlRate" class="metric-sub">0.00%</div>
+                </div>
+            </div>
+            <h2>보유 주식 리스트 <span class="muted" style="font-size:0.78rem;">현재가를 바로 적으면 자동 계산돼요</span></h2>
+            <div id="categoryFilter" class="filter-bar"></div>
+            <div class="table-actions">
+                <label class="tag" style="cursor:pointer;">
+                    <input class="check-input" id="selectAllPrices" type="checkbox" onchange="toggleSelectAllPrices(this.checked)">
+                    전체 선택
+                </label>
+                <div class="action-group">
+                    <button class="ghost-btn" onclick="saveSelectedPrices()">선택 가격 저장</button>
+                    <button class="submit-btn" onclick="saveAllPrices()" style="width:auto; padding:10px 12px;">전체 가격 저장</button>
+                    <button class="ghost-btn back-btn" onclick="openChartView()">그래프 보기</button>
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table class="portfolio-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>종목</th>
+                            <th>수량</th>
+                            <th>평단</th>
+                            <th>투자금액</th>
+                            <th>오늘 가격</th>
+                            <th>평가액</th>
+                            <th>손익</th>
+                            <th>수익률</th>
+                        </tr>
+                    </thead>
+                    <tbody id="portfolioBody"></tbody>
+                </table>
+            </div>
+            <div id="portfolioEmpty" class="empty-state" style="display:none;">왼쪽에서 매수 기록을 추가하면 여기에 바로 보유 주식이 보여요.</div>
+        </div>
+
+        <div id="chartView" class="card" style="display:none;">
+            <h2 style="margin-bottom:12px;">
+                <span style="font-size:1.35rem;">가격 기록 그래프</span>
+                <button class="ghost-btn back-btn" onclick="showPortfolioView()" style="width:auto; padding:9px 12px;">현황판으로</button>
+            </h2>
+            <div class="table-actions">
+                <select id="chartTarget" onchange="renderChartView()"></select>
+                <div class="subtle">개별 종목은 개별/전체 저장 기록이 모두 보이고, 통합은 전체 가격 저장 기록만 보여요.</div>
+            </div>
+            <canvas id="priceChart" class="chart-canvas" width="900" height="320"></canvas>
+            <div style="margin-top:16px;">
+                <h2>저장 기록</h2>
+                <div id="priceRecords"></div>
+            </div>
+        </div>
+
+        <div id="mainWatchCard" class="card">
+            <h2>주시 중인 종목</h2>
+            <div id="watchList" class="tag-wrap"></div>
+        </div>
+
+        <div id="studyView" class="card" style="display:none;">
+            <h2 style="margin-bottom:10px;">
+                <span style="font-size:1.35rem;">투자 공부 일지</span>
+                <button class="ghost-btn back-btn" onclick="showPortfolioView()" style="width:auto; padding:9px 12px;">현황판으로</button>
+            </h2>
+            <div class="subtle" style="margin-bottom:14px;">날짜별로 공부한 내용, 배운 점, 다음에 확인할 것을 남겨둘 수 있어요.</div>
+            <div class="input-group">
+                <input type="date" id="studyDate" onchange="selectStudyDate(this.value)">
+                <textarea id="studyMemo" style="min-height:180px;" placeholder="오늘 공부한 내용, 깨달은 점, 다시 확인할 질문을 적어봐요."></textarea>
+                <button id="studySubmitBtn" class="submit-btn" onclick="saveStudyLog()">공부 일지 저장</button>
+                <button id="cancelStudyEditBtn" class="ghost-btn" onclick="cancelStudyEdit()" style="display:none;">수정 취소</button>
+            </div>
+            <div style="margin-top:18px;">
+                <h2><span id="studyListTitle">기록</span></h2>
+                <div id="studyLogs"></div>
+            </div>
+        </div>
+    </main>
+
+    <div class="right-panel">
+        <div id="compactPanel" class="card" style="display:none;">
+            <h2>간단 투자현황</h2>
+            <div id="categoryFilterCompact" class="filter-bar"></div>
+            <div class="compact-grid">
+                <div class="compact-row"><span class="compact-label">투자금액</span><span id="compactCost" class="compact-value">$0.00</span></div>
+                <div class="compact-row"><span class="compact-label">평가액</span><span id="compactValue" class="compact-value">$0.00</span></div>
+                <div class="compact-row"><span class="compact-label">손익</span><span id="compactPnl" class="compact-value">$0.00</span></div>
+            </div>
+            <h2 style="margin-top:14px;">보유 종목 손익</h2>
+            <div id="compactHoldings" class="compact-stock-list"></div>
+            <h2 style="margin-top:14px;">주시 중인 종목</h2>
+            <div id="watchListCompact" class="tag-wrap"></div>
+        </div>
+
+        <div id="detailPanel" class="card" style="display:none;">
+            <h2 id="detailTitle">상세 내역</h2>
+            <div id="profitCalc" class="profit-badge">
+                <div style="font-size:0.78rem; color:var(--muted); margin-bottom:5px;">선택 종목 미실현 손익</div>
+                <div id="pnlValue" style="font-size:1.35rem;">$0.00 (0.00%)</div>
+            </div>
+            <h2>거래 내역</h2>
+            <div id="tradeHistoryFilter" class="filter-bar"></div>
+            <div id="sellRealizedSummary" class="profit-badge" style="display:none; margin-bottom:12px;">
+                <div style="font-size:0.78rem; color:var(--muted); margin-bottom:5px;">매도 기록 실현 손익 합계</div>
+                <div id="sellRealizedValue" style="font-size:1.2rem;">$0.00</div>
+            </div>
+            <div id="tradeHistory" style="max-height: 240px; overflow-y:auto; margin-bottom:18px; border:1px solid var(--border); border-radius:8px;"></div>
+            <h2>투자 메모</h2>
+            <div class="input-group">
+                <input type="date" id="logDate">
+                <textarea id="logMemo" placeholder="오늘의 투자 생각이나 매매 복기를 남겨보세요."></textarea>
+                <button class="submit-btn" onclick="addDailyLog()" style="background:var(--watch);">오늘의 기록 저장</button>
+            </div>
+            <div id="dailyLogs" style="margin-top:16px;"></div>
+        </div>
+        <div id="noDetail" class="card" style="text-align:center; color:#9ca3af; padding:52px 20px; font-weight:800;">
+            종목을 선택하면 거래 내역과 메모가 보여요.
+        </div>
+    </div>
+</div>
+
+<script>
+    const KEY = 'Stock_Investment_Journal_v3';
+    const OLD_KEYS = [];
+    const DEFAULT_STATE = {
+        categories: ['빅테크', '나스닥ETF', '배당주'],
+        trades: [],
+        dailyLogs: {},
+        studyLogs: {},
+        priceSnapshots: { stocks: {}, overall: [] },
+        quotes: {},
+        stockOrder: []
+    };
+    let state = loadState();
+    let currentType = 'buy';
+    let selectedStock = null;
+    let activeCategory = 'all';
+    let draggedStock = null;
+    let currentView = 'portfolio';
+    let selectedPriceStocks = [];
+    let chartTarget = 'overall';
+    let selectedStudyDate = todayString();
+    let selectedTradeCats = [];
+    let tradeHistoryFilter = 'all';
+    let studyListFilter = 'all';
+    let editingStudyLog = null;
+    let studyCalendarMonth = new Date();
+
+    window.onload = () => {
+        document.getElementById('tradeDate').value = todayString();
+        document.getElementById('logDate').value = todayString();
+        document.getElementById('studyDate').value = selectedStudyDate;
+        renderAll();
+    };
+
+    function todayString() {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    function displayDate(value) {
+        if (!value) return '';
+        const parts = String(value).slice(0, 10).split('-');
+        if (parts.length === 3) return `${parts[0]}/${parts[1]}/${parts[2]}`;
+        return String(value).replaceAll('-', '/');
+    }
+
+    function loadState() {
+        let saved = localStorage.getItem(KEY);
+        if (!saved) {
+            for (const oldKey of OLD_KEYS) {
+                saved = localStorage.getItem(oldKey);
+                if (saved) break;
+            }
+        }
+        const loaded = saved ? JSON.parse(saved) : DEFAULT_STATE;
+        loaded.categories = loaded.categories || DEFAULT_STATE.categories;
+        loaded.trades = (loaded.trades || []).map(t => {
+            const cats = Array.isArray(t.cats)
+                ? t.cats.filter(Boolean)
+                : (t.cat ? [t.cat] : []);
+            return {
+                ...t,
+                cats,
+                cat: cats[0] || '',
+                id: t.id || Date.now() + Math.random(),
+                date: t.date || (t.id ? new Date(t.id).toISOString().slice(0, 10) : todayString())
+            };
+        });
+        loaded.dailyLogs = loaded.dailyLogs || {};
+        loaded.studyLogs = loaded.studyLogs || {};
+        loaded.priceSnapshots = loaded.priceSnapshots || { stocks: {}, overall: [] };
+        loaded.priceSnapshots.stocks = loaded.priceSnapshots.stocks || {};
+        loaded.priceSnapshots.overall = loaded.priceSnapshots.overall || [];
+        loaded.quotes = loaded.quotes || {};
+        loaded.stockOrder = loaded.stockOrder || [];
+        Object.keys(loaded.dailyLogs).forEach(name => {
+            loaded.dailyLogs[name].forEach(log => {
+                if (log.price && !loaded.quotes[name]) {
+                    loaded.quotes[name] = { price: Number(log.price), date: log.date || todayString() };
+                }
+            });
+        });
+        const names = [...new Set(loaded.trades.map(t => t.name))];
+        loaded.stockOrder = [
+            ...loaded.stockOrder.filter(name => names.includes(name)),
+            ...names.filter(name => !loaded.stockOrder.includes(name))
+        ];
+        return loaded;
+    }
+
+    function save() {
+        localStorage.setItem(KEY, JSON.stringify(state));
+        renderAll();
+    }
+
+    function money(value) {
+        const number = Number(value) || 0;
+        return '$' + number.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function numberText(value, digits = 4) {
+        const number = Number(value) || 0;
+        return number.toLocaleString(undefined, { maximumFractionDigits: digits });
+    }
+
+    function escapeText(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        }[char]));
+    }
+
+    function escapeJs(value) {
+        return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    function jsArg(value) {
+        return escapeText(escapeJs(value));
+    }
+
+    function rememberStockOrder(name) {
+        if (!state.stockOrder.includes(name)) state.stockOrder.push(name);
+    }
+
+    function setType(t) {
+        currentType = t;
+        document.querySelectorAll('.btn-row .btn').forEach(b => {
+            if (b.dataset.type) b.classList.toggle('active', b.dataset.type === t);
+        });
+        document.getElementById('stockQty').placeholder = t === 'watch' ? '수량 (비워도 됨)' : '수량';
+        document.getElementById('stockPrice').placeholder = t === 'watch' ? '기준 가격 ($, 선택)' : '단가 ($)';
+    }
+
+    function addCategory() {
+        const val = document.getElementById('newCat').value.trim();
+        if (val && !state.categories.includes(val)) {
+            state.categories.push(val);
+            document.getElementById('newCat').value = '';
+            save();
+        }
+    }
+
+    function deleteCategory(name) {
+        if (confirm('분류를 삭제할까요? 이 분류가 붙어있던 기록에서는 해당 분류만 제거돼요.')) {
+            state.categories = state.categories.filter(c => c !== name);
+            state.trades = state.trades.map(t => {
+                const cats = getTradeCats(t).filter(c => c !== name);
+                return { ...t, cats, cat: cats[0] || '' };
+            });
+            selectedTradeCats = selectedTradeCats.filter(c => c !== name);
+            if (activeCategory === name) activeCategory = 'all';
+            save();
+        }
+    }
+
+    function getTradeCats(trade) {
+        if (Array.isArray(trade.cats)) return trade.cats.filter(Boolean);
+        return trade.cat ? [trade.cat] : [];
+    }
+
+    function saveTrade() {
+        const id = document.getElementById('editingTradeId').value;
+        const name = document.getElementById('stockName').value.trim().toUpperCase();
+        const qty = parseFloat(document.getElementById('stockQty').value) || 0;
+        const price = parseFloat(document.getElementById('stockPrice').value) || 0;
+        const cats = [...selectedTradeCats];
+        const cat = cats[0] || '';
+        const date = document.getElementById('tradeDate').value || todayString();
+        if (!name) return alert('종목명을 입력해줘!');
+        if (currentType !== 'watch' && (!qty || !price)) return alert('매수/매도는 수량과 단가가 필요해요.');
+
+        const payload = { name, qty, price, cats, cat, date, type: currentType };
+        if (id) {
+            state.trades = state.trades.map(t => String(t.id) === String(id) ? { ...t, ...payload } : t);
+        } else {
+            state.trades.push({ id: Date.now(), ...payload });
+            rememberStockOrder(name);
+        }
+        if (price && currentType === 'watch') {
+            state.quotes[name] = { price, date };
+        }
+        cancelTradeEdit(false);
+        save();
+        if (selectedStock === name) showDetail(name);
+    }
+
+    function editTrade(id) {
+        const trade = state.trades.find(t => String(t.id) === String(id));
+        if (!trade) return;
+        document.getElementById('editingTradeId').value = trade.id;
+        document.getElementById('tradeDate').value = trade.date || todayString();
+        document.getElementById('stockName').value = trade.name;
+        document.getElementById('stockQty').value = trade.qty || '';
+        document.getElementById('stockPrice').value = trade.price || '';
+        selectedTradeCats = getTradeCats(trade);
+        renderTradeCategoryPicker();
+        setType(trade.type);
+        document.getElementById('tradeSubmitBtn').innerText = '수정 저장하기';
+        document.getElementById('cancelEditBtn').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelTradeEdit(clearFields = true) {
+        document.getElementById('editingTradeId').value = '';
+        document.getElementById('tradeSubmitBtn').innerText = '기록 저장하기';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        if (clearFields) {
+            document.getElementById('stockName').value = '';
+            document.getElementById('stockQty').value = '';
+            document.getElementById('stockPrice').value = '';
+            document.getElementById('tradeDate').value = todayString();
+            selectedTradeCats = [];
+            renderTradeCategoryPicker();
+            setType('buy');
+        }
+    }
+
+    function tradeMatchesCategory(trade, category) {
+        if (category === 'all') return true;
+        const cats = getTradeCats(trade);
+        if (category === '') return cats.length === 0;
+        return cats.includes(category);
+    }
+
+    function catLabelForName(name, category = activeCategory) {
+        if (category !== 'all') return category || '미분류';
+        const cats = [];
+        state.trades.filter(t => t.name === name).forEach(t => {
+            getTradeCats(t).forEach(c => {
+                if (c && !cats.includes(c)) cats.push(c);
+            });
+        });
+        return cats.length ? cats.join(' · ') : '미분류';
+    }
+
+    function getStockStats(name, category = activeCategory) {
+        const trades = state.trades
+            .filter(t => t.name === name && tradeMatchesCategory(t, category))
+            .sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id);
+        let qty = 0;
+        let cost = 0;
+        let realized = 0;
+        let hasWatch = false;
+        const cat = catLabelForName(name, category);
+
+        trades.forEach(t => {
+            if (t.type === 'watch') {
+                hasWatch = true;
+                return;
+            }
+            if (t.type === 'buy') {
+                qty += Number(t.qty) || 0;
+                cost += (Number(t.qty) || 0) * (Number(t.price) || 0);
+            }
+            if (t.type === 'sell') {
+                const sellQty = Number(t.qty) || 0;
+                const sellPrice = Number(t.price) || 0;
+                const avg = qty > 0 ? cost / qty : 0;
+                const usedQty = Math.min(sellQty, qty);
+                realized += (sellPrice - avg) * usedQty;
+                qty -= sellQty;
+                cost -= avg * sellQty;
+                if (qty <= 0) {
+                    qty = 0;
+                    cost = 0;
+                }
+            }
+        });
+
+        const avg = qty > 0 ? cost / qty : 0;
+        const quote = state.quotes[name] || {};
+        const currentPrice = Number(quote.price) || 0;
+        const value = qty * currentPrice;
+        const pnl = currentPrice ? value - cost : 0;
+        const pnlRate = cost > 0 && currentPrice ? (pnl / cost) * 100 : 0;
+        return { name, qty, cost, avg, realized, cat, hasWatch, currentPrice, value, pnl, pnlRate, quoteDate: quote.date };
+    }
+
+    function getTradesWithRealized(name, category = activeCategory) {
+        const trades = state.trades
+            .filter(t => t.name === name && tradeMatchesCategory(t, category))
+            .sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id);
+        let qty = 0;
+        let cost = 0;
+        return trades.map(t => {
+            const enriched = { ...t, realizedPnl: null, realizedRate: null, avgBeforeSell: null };
+            if (t.type === 'buy') {
+                qty += Number(t.qty) || 0;
+                cost += (Number(t.qty) || 0) * (Number(t.price) || 0);
+            }
+            if (t.type === 'sell') {
+                const sellQty = Number(t.qty) || 0;
+                const sellPrice = Number(t.price) || 0;
+                const avg = qty > 0 ? cost / qty : 0;
+                const usedQty = Math.min(sellQty, qty);
+                enriched.avgBeforeSell = avg;
+                enriched.realizedPnl = avg > 0 ? (sellPrice - avg) * usedQty : 0;
+                enriched.realizedRate = avg > 0 ? ((sellPrice - avg) / avg) * 100 : 0;
+                qty -= sellQty;
+                cost -= avg * sellQty;
+                if (qty <= 0) {
+                    qty = 0;
+                    cost = 0;
+                }
+            }
+            return enriched;
+        });
+    }
+
+    function getAllStockNames() {
+        return getOrderedStockNames();
+    }
+
+    function getHoldingStats() {
+        return getAllStockNames().map(name => getStockStats(name, activeCategory)).filter(s => s.qty > 0);
+    }
+
+    function getOrderedStockNames() {
+        const names = [...new Set(state.trades.map(t => t.name))];
+        state.stockOrder = [
+            ...(state.stockOrder || []).filter(name => names.includes(name)),
+            ...names.filter(name => !(state.stockOrder || []).includes(name))
+        ];
+        return state.stockOrder;
+    }
+
+    function matchesActiveCategory(stats) {
+        return activeCategory === 'all' || (stats.cat || '') === (activeCategory || '미분류');
+    }
+
+    function renderAll() {
+        renderCategories();
+        renderPortfolio();
+        renderWatchList();
+        renderCompactSummary();
+        renderStudyCalendar();
+        renderStudyLogs();
+        renderStudyEntryList();
+        renderChartOptions();
+        if (currentView === 'chart') renderChartView(false);
+        renderMainView();
+        if (selectedStock && currentView === 'portfolio') showDetail(selectedStock, false);
+    }
+
+
+    function toggleTradeCategory(name) {
+        if (selectedTradeCats.includes(name)) {
+            selectedTradeCats = selectedTradeCats.filter(c => c !== name);
+        } else {
+            selectedTradeCats.push(name);
+        }
+        renderTradeCategoryPicker();
+    }
+
+    function clearTradeCategories() {
+        selectedTradeCats = [];
+        renderTradeCategoryPicker();
+    }
+
+    function renderTradeCategoryPicker() {
+        const box = document.getElementById('catSelect');
+        if (!box) return;
+        const chips = [
+            `<button type="button" class="multi-cat-chip ${selectedTradeCats.length === 0 ? 'active' : ''}" onclick="clearTradeCategories()">미분류</button>`,
+            ...state.categories.map(c => {
+                const active = selectedTradeCats.includes(c) ? 'active' : '';
+                return `<button type="button" class="multi-cat-chip ${active}" onclick="toggleTradeCategory('${jsArg(c)}')">${escapeText(c)}</button>`;
+            })
+        ];
+        box.innerHTML = chips.join('');
+    }
+
+    function renderCategories() {
+        renderTradeCategoryPicker();
+        document.getElementById('categoryTags').innerHTML = state.categories.length
+            ? state.categories
+                .map(c => `<div class="tag">${escapeText(c)} <span onclick="deleteCategory('${jsArg(c)}')">×</span></div>`)
+                .join('')
+            : '<div class="muted" style="font-size:0.86rem;">분류를 자유롭게 추가해봐요.</div>';
+        const filterHtml = [
+            `<button class="filter-chip ${activeCategory === 'all' ? 'active' : ''}" onclick="setCategoryFilter('all')">전체</button>`,
+            ...state.categories.map(c => `<button class="filter-chip ${activeCategory === c ? 'active' : ''}" onclick="setCategoryFilter('${jsArg(c)}')">${escapeText(c)}</button>`),
+            `<button class="filter-chip ${activeCategory === '' ? 'active' : ''}" onclick="setCategoryFilter('')">미분류</button>`
+        ].join('');
+        document.getElementById('categoryFilter').innerHTML = filterHtml;
+        document.getElementById('categoryFilterCompact').innerHTML = filterHtml;
+    }
+
+    function setCategoryFilter(category) {
+        activeCategory = category;
+        renderAll();
+    }
+
+    function renderMainView() {
+        const isStudy = currentView === 'study';
+        const isChart = currentView === 'chart';
+        document.getElementById('portfolioView').style.display = currentView === 'portfolio' ? 'block' : 'none';
+        document.getElementById('chartView').style.display = isChart ? 'block' : 'none';
+        document.getElementById('mainWatchCard').style.display = currentView === 'portfolio' ? 'block' : 'none';
+        document.getElementById('studyView').style.display = isStudy ? 'block' : 'none';
+        document.getElementById('compactPanel').style.display = isStudy ? 'block' : 'none';
+        document.getElementById('detailPanel').style.display = currentView === 'portfolio' && selectedStock ? 'block' : 'none';
+        document.getElementById('noDetail').style.display = currentView === 'portfolio' && !selectedStock ? 'block' : 'none';
+    }
+
+    function openStudyLog() {
+        currentView = 'study';
+        editingStudyLog = null;
+        document.getElementById('studySubmitBtn').innerText = '공부 일지 저장';
+        document.getElementById('cancelStudyEditBtn').style.display = 'none';
+        document.getElementById('studyDate').value = selectedStudyDate;
+        document.getElementById('studyMemo').value = '';
+        document.getElementById('studyMemo').focus();
+        renderAll();
+    }
+
+    function showPortfolioView() {
+        currentView = 'portfolio';
+        renderAll();
+    }
+
+    function openChartView() {
+        currentView = 'chart';
+        renderAll();
+    }
+
+    function selectStudyDate(date) {
+        if (!date) return;
+        selectedStudyDate = date;
+        document.getElementById('studyDate').value = date;
+        studyCalendarMonth = new Date(date + 'T00:00:00');
+        renderStudyCalendar();
+        renderStudyLogs();
+    }
+
+    function moveStudyMonth(offset) {
+        studyCalendarMonth = new Date(studyCalendarMonth.getFullYear(), studyCalendarMonth.getMonth() + offset, 1);
+        renderStudyCalendar();
+    }
+
+    function renderStudyCalendar() {
+        const year = studyCalendarMonth.getFullYear();
+        const month = studyCalendarMonth.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const lastDate = new Date(year, month + 1, 0).getDate();
+        const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+        const today = todayString();
+        const cells = weekdays.map(day => `<div class="calendar-weekday">${day}</div>`);
+
+        for (let i = 0; i < firstDay; i++) {
+            cells.push('<button class="calendar-day blank" tabindex="-1"></button>');
+        }
+
+        for (let day = 1; day <= lastDate; day++) {
+            const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const classes = [
+                'calendar-day',
+                date === selectedStudyDate ? 'selected' : '',
+                date === today ? 'today' : '',
+                (state.studyLogs[date] || []).length ? 'has-log' : ''
+            ].filter(Boolean).join(' ');
+            cells.push(`<button class="${classes}" onclick="selectStudyDate('${date}')">${day}</button>`);
+        }
+
+        document.getElementById('calendarTitle').innerText = `${year}년 ${month + 1}월`;
+        document.getElementById('studyCalendar').innerHTML = cells.join('');
+        document.getElementById('selectedStudyDateText').innerText = `${displayDate(selectedStudyDate)} 기록`;
+    }
+
+    function saveStudyLog() {
+        const date = document.getElementById('studyDate').value || selectedStudyDate;
+        const memo = document.getElementById('studyMemo').value.trim();
+        if (!memo) return;
+        selectedStudyDate = date;
+        if (!state.studyLogs[date]) state.studyLogs[date] = [];
+        if (editingStudyLog) {
+            const oldDate = editingStudyLog.date;
+            const log = (state.studyLogs[oldDate] || []).find(item => String(item.id) === String(editingStudyLog.id));
+            if (log) {
+                log.memo = memo;
+                if (oldDate !== date) {
+                    state.studyLogs[oldDate] = (state.studyLogs[oldDate] || []).filter(item => String(item.id) !== String(editingStudyLog.id));
+                    if (!state.studyLogs[oldDate].length) delete state.studyLogs[oldDate];
+                    state.studyLogs[date].unshift(log);
+                }
+            }
+        } else {
+            state.studyLogs[date].unshift({ id: Date.now(), memo, favorite: false });
+        }
+        editingStudyLog = null;
+        document.getElementById('studySubmitBtn').innerText = '공부 일지 저장';
+        document.getElementById('cancelStudyEditBtn').style.display = 'none';
+        document.getElementById('studyMemo').value = '';
+        save();
+    }
+
+    function renderStudyLogs() {
+        document.getElementById('studyListTitle').innerText = `${displayDate(selectedStudyDate)} 기록`;
+        const logs = state.studyLogs[selectedStudyDate] || [];
+        document.getElementById('studyLogs').innerHTML = logs.length ? logs.map(log => `
+            <div class="study-log-item">
+                <button class="star-btn ${log.favorite ? 'active' : ''}" style="position:absolute; left:10px; top:10px;" onclick="toggleStudyFavorite('${selectedStudyDate}', ${log.id}); event.stopPropagation();">${log.favorite ? '★' : '☆'}</button>
+                <div style="color:#4b5563; white-space:pre-wrap; padding-right:28px;">${escapeText(log.memo)}</div>
+                <div class="history-actions" style="position:absolute; right:10px; top:10px;">
+                    <button class="mini-btn" onclick="editStudyLog('${selectedStudyDate}', ${log.id})">수정</button>
+                    <button class="mini-btn" onclick="deleteStudyLog('${selectedStudyDate}', ${log.id})">삭제</button>
+                </div>
+            </div>
+        `).join('') : '<div class="empty-state" style="padding:28px;">이 날짜에는 아직 공부 일지가 없어요.</div>';
+    }
+
+    function getAllStudyEntries() {
+        return Object.keys(state.studyLogs || {}).flatMap(date =>
+            (state.studyLogs[date] || []).map(log => ({ ...log, date }))
+        ).sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
+    }
+
+    function renderStudyEntryList() {
+        const entries = getAllStudyEntries().filter(entry => studyListFilter === 'all' || entry.favorite);
+        document.getElementById('studyListAllBtn').classList.toggle('active', studyListFilter === 'all');
+        document.getElementById('studyListFavBtn').classList.toggle('active', studyListFilter === 'favorite');
+        document.getElementById('studyEntryList').innerHTML = entries.length ? entries.map(entry => `
+            <div class="study-list-item" onclick="openStudyEntry('${entry.date}', ${entry.id})">
+                <button class="star-btn ${entry.favorite ? 'active' : ''}" onclick="toggleStudyFavorite('${entry.date}', ${entry.id}); event.stopPropagation();">${entry.favorite ? '★' : '☆'}</button>
+                <div>
+                    <div class="study-list-title">${escapeText(displayDate(entry.date))}</div>
+                    <div class="study-list-preview">${escapeText((entry.memo || '').slice(0, 42))}${(entry.memo || '').length > 42 ? '...' : ''}</div>
+                </div>
+            </div>
+        `).join('') : '<div class="muted" style="font-size:0.86rem;">표시할 공부일지가 없어요.</div>';
+    }
+
+    function setStudyListFilter(type) {
+        studyListFilter = type;
+        renderStudyEntryList();
+    }
+
+    function openStudyEntry(date, id) {
+        editStudyLog(date, id);
+    }
+
+    function editStudyLog(date, id) {
+        const log = (state.studyLogs[date] || []).find(item => String(item.id) === String(id));
+        if (!log) return;
+        selectedStudyDate = date;
+        currentView = 'study';
+        editingStudyLog = { date, id };
+        document.getElementById('studyDate').value = date;
+        document.getElementById('studyMemo').value = log.memo || '';
+        document.getElementById('studySubmitBtn').innerText = '수정 저장';
+        document.getElementById('cancelStudyEditBtn').style.display = 'block';
+        renderAll();
+        document.getElementById('studyMemo').focus();
+    }
+
+    function cancelStudyEdit() {
+        editingStudyLog = null;
+        document.getElementById('studyMemo').value = '';
+        document.getElementById('studySubmitBtn').innerText = '공부 일지 저장';
+        document.getElementById('cancelStudyEditBtn').style.display = 'none';
+    }
+
+    function toggleStudyFavorite(date, id) {
+        const log = (state.studyLogs[date] || []).find(item => String(item.id) === String(id));
+        if (!log) return;
+        log.favorite = !log.favorite;
+        save();
+    }
+
+    function deleteStudyLog(date, id) {
+        if (confirm('이 공부 일지를 삭제할까요?')) {
+            state.studyLogs[date] = (state.studyLogs[date] || []).filter(log => String(log.id) !== String(id));
+            if (!state.studyLogs[date].length) delete state.studyLogs[date];
+            if (editingStudyLog && editingStudyLog.date === date && String(editingStudyLog.id) === String(id)) cancelStudyEdit();
+            save();
+        }
+    }
+
+    function renderPortfolio() {
+        const holdings = getHoldingStats();
+        const body = document.getElementById('portfolioBody');
+        const empty = document.getElementById('portfolioEmpty');
+        empty.style.display = holdings.length ? 'none' : 'block';
+        empty.innerText = activeCategory === 'all'
+            ? '왼쪽에서 매수 기록을 추가하면 여기에 바로 보유 주식이 보여요.'
+            : '이 분류에 보유 중인 주식이 없어요.';
+        body.innerHTML = holdings.map(s => {
+            const pnlClass = s.pnl > 0 ? 'up' : (s.pnl < 0 ? 'down' : 'muted');
+            const selectedClass = selectedStock === s.name ? 'selected' : '';
+            const checked = selectedPriceStocks.includes(s.name) ? 'checked' : '';
+            return `
+                <tr class="${selectedClass}" data-stock="${escapeText(s.name)}" draggable="true" onclick="showDetail('${jsArg(s.name)}')" ondragstart="handleDragStart(event, '${jsArg(s.name)}')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, '${jsArg(s.name)}')" ondragend="handleDragEnd()">
+                    <td onclick="event.stopPropagation();"><input class="check-input" type="checkbox" ${checked} onchange="togglePriceStock('${jsArg(s.name)}', this.checked)"></td>
+                    <td><span class="ticker"><span class="drag-handle">↕</span>${escapeText(s.name)}</span><span class="subtle">${escapeText(s.cat || '미분류')}</span></td>
+                    <td>${numberText(s.qty)}</td>
+                    <td>${money(s.avg)}</td>
+                    <td>${money(s.cost)}</td>
+                    <td onclick="event.stopPropagation();">
+                        <input class="price-input" type="text" inputmode="decimal" value="${s.currentPrice || ''}" placeholder="0.00" oninput="updateQuote('${jsArg(s.name)}', this.value, this)">
+                    </td>
+                    <td class="quote-value">${s.currentPrice ? money(s.value) : '<span class="muted">가격 입력</span>'}</td>
+                    <td class="pnl-cell ${pnlClass}">${s.currentPrice ? money(s.pnl) : '-'}</td>
+                    <td class="rate-cell ${pnlClass}">${s.currentPrice ? `${s.pnl >= 0 ? '+' : ''}${s.pnlRate.toFixed(2)}%` : '-'}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const totalCost = holdings.reduce((acc, s) => acc + s.cost, 0);
+        const totalValue = holdings.reduce((acc, s) => acc + s.value, 0);
+        const totalPnl = holdings.reduce((acc, s) => acc + s.pnl, 0);
+        const totalRate = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
+        document.getElementById('totalCost').innerText = money(totalCost);
+        document.getElementById('totalValue').innerText = money(totalValue);
+        document.getElementById('totalPnl').innerText = `${totalPnl >= 0 ? '+' : ''}${money(totalPnl)}`;
+        document.getElementById('totalPnl').className = `metric-value ${totalPnl > 0 ? 'up' : totalPnl < 0 ? 'down' : ''}`;
+        document.getElementById('totalPnlRate').innerText = `${totalPnl >= 0 ? '+' : ''}${totalRate.toFixed(2)}%`;
+        document.getElementById('holdingCount').innerText = `보유 종목 ${holdings.length}개`;
+        const selectAll = document.getElementById('selectAllPrices');
+        if (selectAll) {
+            const names = holdings.map(s => s.name);
+            selectAll.checked = names.length > 0 && names.every(name => selectedPriceStocks.includes(name));
+        }
+    }
+
+    function togglePriceStock(name, checked) {
+        if (checked && !selectedPriceStocks.includes(name)) selectedPriceStocks.push(name);
+        if (!checked) selectedPriceStocks = selectedPriceStocks.filter(item => item !== name);
+    }
+
+    function toggleSelectAllPrices(checked) {
+        const names = getHoldingStats().map(s => s.name);
+        selectedPriceStocks = checked ? names : [];
+        renderPortfolio();
+    }
+
+    function makeStockSnapshot(stats, scope, batchId = null) {
+        return {
+            id: Date.now() + Math.random(),
+            batchId,
+            date: todayString(),
+            scope,
+            name: stats.name,
+            price: stats.currentPrice,
+            qty: stats.qty,
+            cost: stats.cost,
+            value: stats.value,
+            pnl: stats.pnl,
+            pnlRate: stats.pnlRate
+        };
+    }
+
+    function saveStockSnapshot(stats, scope, batchId = null) {
+        if (!stats.currentPrice) return false;
+        if (!state.priceSnapshots.stocks[stats.name]) state.priceSnapshots.stocks[stats.name] = [];
+        state.priceSnapshots.stocks[stats.name].unshift(makeStockSnapshot(stats, scope, batchId));
+        return true;
+    }
+
+    function saveSelectedPrices() {
+        const holdings = getHoldingStats().filter(s => selectedPriceStocks.includes(s.name));
+        if (!holdings.length) return alert('저장할 종목을 선택해줘!');
+        const saved = holdings.filter(s => saveStockSnapshot(s, 'single')).length;
+        if (!saved) return alert('오늘 가격이 입력된 종목이 없어요.');
+        localStorage.setItem(KEY, JSON.stringify(state));
+        renderAll();
+        alert(`${saved}개 종목 가격을 저장했어요.`);
+    }
+
+    function saveAllPrices() {
+        const holdings = getHoldingStats().filter(s => s.currentPrice);
+        if (!holdings.length) return alert('오늘 가격을 입력한 보유 종목이 없어요.');
+        const batchId = Date.now();
+        holdings.forEach(s => saveStockSnapshot(s, 'all', batchId));
+        const totalCost = holdings.reduce((acc, s) => acc + s.cost, 0);
+        const totalValue = holdings.reduce((acc, s) => acc + s.value, 0);
+        const totalPnl = holdings.reduce((acc, s) => acc + s.pnl, 0);
+        state.priceSnapshots.overall.unshift({
+            id: batchId,
+            date: todayString(),
+            totalCost,
+            totalValue,
+            totalPnl,
+            totalPnlRate: totalCost > 0 ? (totalPnl / totalCost) * 100 : 0,
+            prices: Object.fromEntries(holdings.map(s => [s.name, s.currentPrice]))
+        });
+        localStorage.setItem(KEY, JSON.stringify(state));
+        selectedPriceStocks = holdings.map(s => s.name);
+        renderAll();
+        alert(`전체 가격 ${holdings.length}개를 저장했어요.`);
+    }
+
+    function renderChartOptions() {
+        const select = document.getElementById('chartTarget');
+        if (!select) return;
+        const names = getAllStockNames().filter(name => (state.priceSnapshots.stocks[name] || []).length);
+        const options = [
+            `<option value="overall">통합 그래프</option>`,
+            ...names.map(name => `<option value="${escapeText(name)}">${escapeText(name)}</option>`)
+        ].join('');
+        select.innerHTML = options;
+        if (chartTarget !== 'overall' && !names.includes(chartTarget)) chartTarget = 'overall';
+        select.value = chartTarget;
+    }
+
+    function getChartRecords() {
+        if (chartTarget === 'overall') return [...(state.priceSnapshots.overall || [])].sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id);
+        return [...(state.priceSnapshots.stocks[chartTarget] || [])].sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id);
+    }
+
+    function renderChartView(updateTarget = true) {
+        const select = document.getElementById('chartTarget');
+        if (updateTarget && select) chartTarget = select.value;
+        const records = getChartRecords();
+        drawPriceChart(records);
+        renderPriceRecords(records);
+    }
+
+    function chartValue(record) {
+        return chartTarget === 'overall' ? Number(record.totalValue) || 0 : Number(record.value) || 0;
+    }
+
+    function drawPriceChart(records) {
+        const canvas = document.getElementById('priceChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#fbfffc';
+        ctx.fillRect(0, 0, width, height);
+        ctx.strokeStyle = '#dbe8dd';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+            const y = 30 + i * 70;
+            ctx.beginPath();
+            ctx.moveTo(45, y);
+            ctx.lineTo(width - 20, y);
+            ctx.stroke();
+        }
+        if (!records.length) {
+            ctx.fillStyle = '#53615a';
+            ctx.font = '700 18px Pretendard, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('저장된 가격 기록이 없어요.', width / 2, height / 2);
+            return;
+        }
+        const values = records.map(chartValue);
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min || 1;
+        const left = 55;
+        const right = width - 28;
+        const top = 34;
+        const bottom = height - 44;
+        const points = records.map((record, index) => {
+            const x = records.length === 1 ? (left + right) / 2 : left + (index / (records.length - 1)) * (right - left);
+            const y = bottom - ((chartValue(record) - min) / range) * (bottom - top);
+            return { x, y, record };
+        });
+        ctx.strokeStyle = '#008f63';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+        ctx.stroke();
+        points.forEach(p => {
+            ctx.fillStyle = '#00b84a';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.fillStyle = '#53615a';
+        ctx.font = '700 12px Pretendard, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(money(max), 8, top + 4);
+        ctx.fillText(money(min), 8, bottom + 4);
+        ctx.textAlign = 'center';
+        ctx.fillText(displayDate(records[0].date), points[0].x, height - 14);
+        ctx.fillText(displayDate(records[records.length - 1].date), points[points.length - 1].x, height - 14);
+    }
+
+    function renderPriceRecords(records) {
+        const box = document.getElementById('priceRecords');
+        if (!box) return;
+        const newest = [...records].reverse();
+        box.innerHTML = newest.length ? newest.map(record => {
+            const value = chartTarget === 'overall' ? record.totalValue : record.value;
+            const pnl = chartTarget === 'overall' ? record.totalPnl : record.pnl;
+            const rate = chartTarget === 'overall' ? record.totalPnlRate : record.pnlRate;
+            const rowClass = pnl > 0 ? 'up' : (pnl < 0 ? 'down' : 'muted');
+            const scopeText = chartTarget === 'overall' ? '전체 저장' : (record.scope === 'all' ? '전체 저장' : '개별 저장');
+            return `
+                <div class="chart-record">
+                    <div>
+                        <b>${escapeText(displayDate(record.date))}</b>
+                        <span class="subtle">${scopeText} · 평가액 ${money(value)} · <span class="${rowClass}">손익 ${pnl >= 0 ? '+' : ''}${money(pnl)} (${pnl >= 0 ? '+' : ''}${Number(rate || 0).toFixed(2)}%)</span></span>
+                    </div>
+                    <div class="chart-record-actions">
+                        <button class="mini-btn" onclick="editPriceRecord('${chartTarget === 'overall' ? 'overall' : jsArg(chartTarget)}', ${record.id})">수정</button>
+                        <button class="mini-btn" onclick="deletePriceRecord('${chartTarget === 'overall' ? 'overall' : jsArg(chartTarget)}', ${record.id})">삭제</button>
+                    </div>
+                </div>
+            `;
+        }).join('') : '<div class="empty-state" style="padding:28px;">저장된 가격 기록이 없어요.</div>';
+    }
+
+    function editPriceRecord(target, id) {
+        if (target === 'overall') {
+            const record = state.priceSnapshots.overall.find(item => String(item.id) === String(id));
+            if (!record) return;
+            const date = prompt('날짜를 수정해줘. 예: 2026-06-16', record.date);
+            if (!date) return;
+            const totalValue = parseFloat(prompt('전체 평가액을 수정해줘.', record.totalValue));
+            if (!totalValue) return;
+            record.date = date;
+            record.totalValue = totalValue;
+            record.totalPnl = totalValue - record.totalCost;
+            record.totalPnlRate = record.totalCost > 0 ? (record.totalPnl / record.totalCost) * 100 : 0;
+        } else {
+            const record = (state.priceSnapshots.stocks[target] || []).find(item => String(item.id) === String(id));
+            if (!record) return;
+            const date = prompt('날짜를 수정해줘. 예: 2026-06-16', record.date);
+            if (!date) return;
+            const price = parseFloat(prompt(`${target} 가격을 수정해줘.`, record.price));
+            if (!price) return;
+            record.date = date;
+            record.price = price;
+            record.value = record.qty * price;
+            record.pnl = record.value - record.cost;
+            record.pnlRate = record.cost > 0 ? (record.pnl / record.cost) * 100 : 0;
+        }
+        save();
+    }
+
+    function deletePriceRecord(target, id) {
+        if (!confirm('이 가격 기록을 삭제할까요?')) return;
+        if (target === 'overall') {
+            state.priceSnapshots.overall = state.priceSnapshots.overall.filter(item => String(item.id) !== String(id));
+        } else {
+            state.priceSnapshots.stocks[target] = (state.priceSnapshots.stocks[target] || []).filter(item => String(item.id) !== String(id));
+        }
+        save();
+    }
+
+    function renderCompactSummary() {
+        const holdings = getHoldingStats();
+        const totalCost = holdings.reduce((acc, s) => acc + s.cost, 0);
+        const totalValue = holdings.reduce((acc, s) => acc + s.value, 0);
+        const totalPnl = holdings.reduce((acc, s) => acc + s.pnl, 0);
+        const pnlClass = totalPnl > 0 ? 'up' : (totalPnl < 0 ? 'down' : '');
+        document.getElementById('compactCost').innerText = money(totalCost);
+        document.getElementById('compactValue').innerText = money(totalValue);
+        document.getElementById('compactPnl').innerText = `${totalPnl >= 0 ? '+' : ''}${money(totalPnl)}`;
+        document.getElementById('compactPnl').className = `compact-value ${pnlClass}`;
+        document.getElementById('compactHoldings').innerHTML = holdings.length ? holdings.map(s => {
+            const rowClass = s.pnl > 0 ? 'up' : (s.pnl < 0 ? 'down' : 'muted');
+            const pnlText = s.currentPrice ? `${s.pnl >= 0 ? '+' : ''}${money(s.pnl)}` : '-';
+            const rateText = s.currentPrice ? `${s.pnl >= 0 ? '+' : ''}${s.pnlRate.toFixed(2)}%` : '가격 입력 전';
+            return `
+                <div class="compact-stock">
+                    <div class="compact-stock-top">
+                        <span>${escapeText(s.name)}</span>
+                        <span class="${rowClass}">${pnlText}</span>
+                    </div>
+                    <div class="compact-stock-bottom">
+                        <span>${escapeText(s.cat || '미분류')}</span>
+                        <span class="${rowClass}">${rateText}</span>
+                    </div>
+                </div>
+            `;
+        }).join('') : '<div class="empty-state" style="padding:22px;">이 분류에 보유 종목이 없어요.</div>';
+    }
+
+    function reorderVisibleStocks(targetStock) {
+        if (!draggedStock || draggedStock === targetStock) return;
+        const visibleNames = getHoldingStats().map(s => s.name);
+        const visibleOrder = visibleNames.filter(name => name !== draggedStock);
+        const targetIndex = visibleOrder.indexOf(targetStock);
+        if (targetIndex < 0) return;
+        visibleOrder.splice(targetIndex, 0, draggedStock);
+
+        let visibleIndex = 0;
+        state.stockOrder = state.stockOrder.map(name => {
+            if (!visibleNames.includes(name)) return name;
+            const nextName = visibleOrder[visibleIndex];
+            visibleIndex += 1;
+            return nextName;
+        });
+        draggedStock = null;
+        localStorage.setItem(KEY, JSON.stringify(state));
+        renderPortfolio();
+    }
+
+    function clearDragStyles() {
+        document.querySelectorAll('.portfolio-table tr').forEach(row => row.classList.remove('dragging', 'drag-over'));
+    }
+
+    function handleDragStart(event, name) {
+        draggedStock = name;
+        event.currentTarget.classList.add('dragging');
+        event.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragOver(event) {
+        event.preventDefault();
+        event.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDragLeave(event) {
+        event.currentTarget.classList.remove('drag-over');
+    }
+
+    function handleDrop(event, name) {
+        event.preventDefault();
+        clearDragStyles();
+        reorderVisibleStocks(name);
+    }
+
+    function handleDragEnd() {
+        draggedStock = null;
+        clearDragStyles();
+    }
+
+    function renderWatchList() {
+        const watchNames = getAllStockNames().filter(name => {
+            const stats = getStockStats(name, activeCategory);
+            const trades = state.trades.filter(t => t.name === name && tradeMatchesCategory(t, activeCategory));
+            return stats.qty <= 0 && trades.some(t => t.type === 'watch');
+        });
+        document.getElementById('watchList').innerHTML = watchNames.length
+            ? watchNames.map(name => {
+                const quote = state.quotes[name]?.price ? ` · ${money(state.quotes[name].price)}` : '';
+                return `<div class="tag" onclick="showDetail('${jsArg(name)}')" style="cursor:pointer;">${escapeText(name)}${quote}</div>`;
+            }).join('')
+            : '<div class="muted" style="font-size:0.86rem;">주시 기록을 추가하면 여기에 모여요.</div>';
+        document.getElementById('watchListCompact').innerHTML = document.getElementById('watchList').innerHTML;
+    }
+
+    function updateQuote(name, value) {
+        const price = parseFloat(value);
+        if (price) state.quotes[name] = { price, date: todayString() };
+        else delete state.quotes[name];
+        localStorage.setItem(KEY, JSON.stringify(state));
+        updatePortfolioNumbers(name);
+        if (selectedStock === name) updateDetailPnl();
+    }
+
+    function findPortfolioRow(name) {
+        return [...document.querySelectorAll('#portfolioBody tr')].find(row => row.dataset.stock === name);
+    }
+
+    function updatePortfolioNumbers(name) {
+        const stats = getStockStats(name, activeCategory);
+        const row = findPortfolioRow(name);
+        if (row) {
+            const pnlClass = stats.pnl > 0 ? 'up' : (stats.pnl < 0 ? 'down' : 'muted');
+            const valueCell = row.querySelector('.quote-value');
+            const pnlCell = row.querySelector('.pnl-cell');
+            const rateCell = row.querySelector('.rate-cell');
+            if (valueCell) valueCell.innerHTML = stats.currentPrice ? money(stats.value) : '<span class="muted">가격 입력</span>';
+            if (pnlCell) {
+                pnlCell.className = `pnl-cell ${pnlClass}`;
+                pnlCell.innerText = stats.currentPrice ? money(stats.pnl) : '-';
+            }
+            if (rateCell) {
+                rateCell.className = `rate-cell ${pnlClass}`;
+                rateCell.innerText = stats.currentPrice ? `${stats.pnl >= 0 ? '+' : ''}${stats.pnlRate.toFixed(2)}%` : '-';
+            }
+        }
+
+        const holdings = getHoldingStats();
+        const totalCost = holdings.reduce((acc, s) => acc + s.cost, 0);
+        const totalValue = holdings.reduce((acc, s) => acc + s.value, 0);
+        const totalPnl = holdings.reduce((acc, s) => acc + s.pnl, 0);
+        const totalRate = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
+        document.getElementById('totalCost').innerText = money(totalCost);
+        document.getElementById('totalValue').innerText = money(totalValue);
+        document.getElementById('totalPnl').innerText = `${totalPnl >= 0 ? '+' : ''}${money(totalPnl)}`;
+        document.getElementById('totalPnl').className = `metric-value ${totalPnl > 0 ? 'up' : totalPnl < 0 ? 'down' : ''}`;
+        document.getElementById('totalPnlRate').innerText = `${totalPnl >= 0 ? '+' : ''}${totalRate.toFixed(2)}%`;
+        renderCompactSummary();
+    }
+
+    function showDetail(name, rerender = true) {
+        selectedStock = name;
+        document.getElementById('noDetail').style.display = 'none';
+        document.getElementById('detailPanel').style.display = 'block';
+        const stats = getStockStats(name, activeCategory);
+        document.getElementById('detailTitle').innerHTML = `${escapeText(name)} <span class="subtle">평단 ${money(stats.avg)} · 보유 ${numberText(stats.qty)}주</span>`;
+        updateDetailPnl();
+        renderTradeHistory(name);
+        renderDailyLogs(name);
+        if (rerender) renderPortfolio();
+    }
+
+    function updateDetailPnl() {
+        if (!selectedStock) return;
+        const stats = getStockStats(selectedStock, activeCategory);
+        const pnlDiv = document.getElementById('pnlValue');
+        if (!stats.currentPrice || stats.qty <= 0 || stats.avg === 0) {
+            pnlDiv.innerText = '$0.00 (0.00%)';
+            pnlDiv.className = '';
+            return;
+        }
+        pnlDiv.innerText = `${stats.pnl >= 0 ? '+' : ''}${money(stats.pnl)} (${stats.pnl >= 0 ? '+' : ''}${stats.pnlRate.toFixed(2)}%)`;
+        pnlDiv.className = stats.pnl >= 0 ? 'up' : 'down';
+    }
+
+    function updateSelectedQuoteFromDetail() {
+        if (!selectedStock) return;
+        updateDetailPnl();
+    }
+
+    function renderTradeHistory(name) {
+        const allTrades = getTradesWithRealized(name, activeCategory);
+        const sellTotal = allTrades
+            .filter(t => t.type === 'sell')
+            .reduce((acc, t) => acc + (Number(t.realizedPnl) || 0), 0);
+        const sellClass = sellTotal > 0 ? 'up' : (sellTotal < 0 ? 'down' : 'muted');
+        document.getElementById('tradeHistoryFilter').innerHTML = [
+            `<button class="filter-chip ${tradeHistoryFilter === 'all' ? 'active' : ''}" onclick="setTradeHistoryFilter('all')">전체</button>`,
+            `<button class="filter-chip ${tradeHistoryFilter === 'buy' ? 'active' : ''}" onclick="setTradeHistoryFilter('buy')">매수</button>`,
+            `<button class="filter-chip ${tradeHistoryFilter === 'sell' ? 'active' : ''}" onclick="setTradeHistoryFilter('sell')">매도</button>`
+        ].join('');
+        document.getElementById('sellRealizedSummary').style.display = tradeHistoryFilter === 'sell' ? 'block' : 'none';
+        document.getElementById('sellRealizedValue').innerText = `${sellTotal >= 0 ? '+' : ''}${money(sellTotal)}`;
+        document.getElementById('sellRealizedValue').className = sellClass;
+
+        const trades = allTrades
+            .filter(t => tradeHistoryFilter === 'all' || t.type === tradeHistoryFilter)
+            .sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
+        document.getElementById('tradeHistory').innerHTML = trades.length ? trades.map(t => {
+            const label = t.type === 'buy' ? '매수' : (t.type === 'sell' ? '매도' : '주시');
+            const color = t.type === 'buy' ? 'var(--buy)' : (t.type === 'sell' ? 'var(--sell)' : 'var(--watch)');
+            const catText = getTradeCats(t).length ? getTradeCats(t).join(' · ') : '미분류';
+            const tradeDetail = t.type === 'watch'
+                ? `${t.price ? money(t.price) : '가격 없음'}`
+                : `${numberText(t.qty)}주 · ${money(t.price)}`;
+            const realizedClass = t.realizedPnl > 0 ? 'up' : (t.realizedPnl < 0 ? 'down' : 'muted');
+            const sellPnlText = t.type === 'sell'
+                ? ` · <span class="${realizedClass}">실현 ${t.realizedPnl >= 0 ? '+' : ''}${money(t.realizedPnl)} (${t.realizedPnl >= 0 ? '+' : ''}${Number(t.realizedRate || 0).toFixed(2)}%)</span>`
+                : '';
+            return `
+                <div class="history-item">
+                    <b style="color:${color}">${label}</b>
+                    <span><b>${escapeText(displayDate(t.date || ''))}</b><br><span class="history-detail">${escapeText(tradeDetail)} · <span class="history-cat">${escapeText(catText)}</span>${sellPnlText}</span></span>
+                    <span class="history-actions">
+                        <button class="mini-btn" onclick="editTrade(${t.id})">수정</button>
+                        <button class="mini-btn" onclick="deleteTrade(${t.id})">삭제</button>
+                    </span>
+                </div>
+            `;
+        }).join('') : '<div class="empty-state" style="padding:22px;">아직 기록이 없어요.</div>';
+    }
+
+    function setTradeHistoryFilter(type) {
+        tradeHistoryFilter = type;
+        if (selectedStock) renderTradeHistory(selectedStock);
+    }
+
+    function addDailyLog() {
+        if (!selectedStock) return;
+        const date = document.getElementById('logDate').value || todayString();
+        const memo = document.getElementById('logMemo').value.trim();
+        if (!memo) return;
+        if (!state.dailyLogs[selectedStock]) state.dailyLogs[selectedStock] = [];
+        state.dailyLogs[selectedStock].unshift({ id: Date.now(), date, memo });
+        document.getElementById('logMemo').value = '';
+        save();
+        showDetail(selectedStock);
+    }
+
+    function renderDailyLogs(name) {
+        const logs = state.dailyLogs[name] || [];
+        document.getElementById('dailyLogs').innerHTML = logs.map(l => `
+            <div class="log-card">
+                <div style="font-weight:800; color:var(--watch); margin-bottom:5px;">${escapeText(displayDate(l.date))}</div>
+                <div style="color:#4b5563; white-space:pre-wrap; padding-right:24px;">${escapeText(l.memo || '')}</div>
+                <button class="del-x" style="position:absolute; right:8px; top:8px;" onclick="deleteDailyLog(${l.id})">×</button>
+            </div>
+        `).join('');
+    }
+
+    function deleteTrade(id) {
+        if (confirm('이 기록을 삭제할까요?')) {
+            state.trades = state.trades.filter(t => String(t.id) !== String(id));
+            save();
+            if (selectedStock) showDetail(selectedStock);
+        }
+    }
+
+    function deleteDailyLog(id) {
+        if (!selectedStock) return;
+        if (confirm('이 메모를 삭제할까요?')) {
+            state.dailyLogs[selectedStock] = (state.dailyLogs[selectedStock] || []).filter(l => String(l.id) !== String(id));
+            save();
+            showDetail(selectedStock);
+        }
+    }
+
+    function resetAllData() {
+        if (confirm('전체 데이터를 초기화할까요?')) {
+            localStorage.removeItem(KEY);
+            OLD_KEYS.forEach(key => localStorage.removeItem(key));
+            location.reload();
+        }
+    }
+
+    function exportData() {
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = '투자일지 백업.json';
+        a.click();
+    }
+
+    function importData() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = event => {
+                try {
+                    state = JSON.parse(event.target.result);
+                    state.categories = state.categories || [];
+                    state.trades = (state.trades || []).map(t => {
+                        const cats = Array.isArray(t.cats) ? t.cats.filter(Boolean) : (t.cat ? [t.cat] : []);
+                        return { ...t, cats, cat: cats[0] || '' };
+                    });
+                    state.dailyLogs = state.dailyLogs || {};
+                    state.studyLogs = state.studyLogs || {};
+                    state.priceSnapshots = state.priceSnapshots || { stocks: {}, overall: [] };
+                    state.priceSnapshots.stocks = state.priceSnapshots.stocks || {};
+                    state.priceSnapshots.overall = state.priceSnapshots.overall || [];
+                    state.quotes = state.quotes || {};
+                    state.stockOrder = state.stockOrder || [];
+                    save();
+                } catch(err) {
+                    alert('파일을 불러오지 못했어요.');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+</script>
+</body>
+</html>
