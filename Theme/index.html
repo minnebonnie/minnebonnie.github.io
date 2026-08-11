@@ -922,16 +922,42 @@
       flash("주제를 삭제했어요.");
     }
 
-    function backup() {
+    async function backup() {
       const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const fileName = `topic-diary-backup-${stamp}.json`;
+
+      if ("showSaveFilePicker" in window) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: fileName,
+            types: [
+              {
+                description: "JSON 백업 파일",
+                accept: { "application/json": [".json"] }
+              }
+            ]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          flash("선택한 위치에 백업했어요.");
+          return;
+        } catch (error) {
+          if (error && error.name === "AbortError") {
+            flash("백업을 취소했어요.");
+            return;
+          }
+        }
+      }
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `주제 백업_phone.json`;
+      link.download = "주제 백업_phone";
       link.click();
       URL.revokeObjectURL(url);
-      flash("백업 파일을 만들었어요.");
+      flash("백업 파일을 다운로드했어요.");
     }
 
     function importFile(nextMode) {
@@ -943,12 +969,15 @@
     function mergeData(incoming) {
       const normalized = normalize(incoming);
       const byTitle = new Map(data.topics.map(topic => [topic.title, topic]));
+      const result = { topics: 0, entries: 0 };
 
       normalized.topics.forEach(topic => {
         const existing = byTitle.get(topic.title);
         if (!existing) {
           data.topics.push(topic);
           byTitle.set(topic.title, topic);
+          result.topics += 1;
+          result.entries += topic.entries.length;
           return;
         }
 
@@ -958,10 +987,13 @@
           if (!seen.has(key)) {
             existing.entries.push(entry);
             seen.add(key);
+            result.entries += 1;
           }
         });
         existing.entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       });
+
+      return result;
     }
 
     topicForm.addEventListener("submit", event => {
@@ -991,8 +1023,13 @@
       try {
         const incoming = JSON.parse(await file.text());
         if (mode === "merge") {
-          mergeData(incoming);
-          flash("백업을 병합했어요.");
+          const result = mergeData(incoming);
+          const total = result.topics + result.entries;
+          if (total === 0) {
+            flash("새로 병합할 데이터가 없어요.");
+          } else {
+            flash(`새 주제 ${result.topics}개, 새 기록 ${result.entries}개를 병합했어요.`);
+          }
         } else {
           data = normalize(incoming);
           flash("백업을 불러왔어요.");
