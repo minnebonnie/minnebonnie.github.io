@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>가벼운 주제 기록</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Jua&display=swap");
+
+    :root {
+      --ink: #22252a;
+      --muted: #6d7480;
+      --line: #ddd8cf;
+      --paper: #fffdf8;
+      --wash: #f4efe6;
+      --mint: #dceee6;
+      --rose: #f2d8d5;
+      --gold: #efdca4;
+      --blue: #d8e4f2;
+      --green: #b9d8c2;
+      --shadow: 0 18px 45px rgba(58, 47, 35, .13);
+      color-scheme: light;
+      font-family: "Jua", "Apple SD Gothic Neo", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(216, 228, 242, .55) 0 28%, transparent 28%),
+        linear-gradient(180deg, #fffdf8 0%, #f5f0e8 100%);
+      font-size: 20px;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      width: min(1120px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+    }
+
+    .sidebar {
+      padding: 26px 18px;
+      background: rgba(255, 253, 248, .76);
+      border-right: 1px solid rgba(101, 87, 67, .15);
+      backdrop-filter: blur(16px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 27px;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .count {
+      min-width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--gold);
+      font-size: 22px;
+      font-weight: 800;
+      box-shadow: inset 0 -4px 0 rgba(126, 98, 25, .11);
+    }
+
+    .new-topic {
+      display: grid;
+      grid-template-columns: 1fr 44px;
+      gap: 8px;
+      margin: 18px 0 16px;
+    }
+
+    .new-topic input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .82);
+      color: var(--ink);
+      outline: 0;
+      border-radius: 8px;
+      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    .new-topic input {
+      min-height: 44px;
+      padding: 0 13px;
+      font-size: 20px;
+    }
+
+    .new-topic input:focus,
+    textarea:focus {
+      border-color: #8ea99b;
+      box-shadow: 0 0 0 4px rgba(142, 169, 155, .18);
+      background: #fff;
+    }
+
+    .icon-button {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--ink);
+      background: var(--green);
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .tool {
+      min-height: 38px;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .topics {
+      display: grid;
+      gap: 10px;
+    }
+
+    .topic-tab {
+      position: relative;
+      width: 100%;
+      min-height: 74px;
+      padding: 12px 14px 12px 18px;
+      border-radius: 8px;
+      text-align: left;
+      color: var(--ink);
+      background: var(--tab-color, var(--mint));
+      box-shadow: 0 7px 18px rgba(52, 45, 34, .08);
+      overflow: hidden;
+    }
+
+    .topic-tab::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 7px;
+      background: rgba(34, 37, 42, .18);
+    }
+
+    .topic-tab.active {
+      outline: 3px solid rgba(34, 37, 42, .78);
+      outline-offset: 2px;
+    }
+
+    .topic-name {
+      display: block;
+      font-size: 23px;
+      font-weight: 850;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .topic-meta {
+      display: block;
+      margin-top: 6px;
+      color: rgba(34, 37, 42, .66);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    main {
+      padding: 30px;
+      display: grid;
+      align-content: start;
+      gap: 18px;
+    }
+
+    .current {
+      display: grid;
+      gap: 14px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid rgba(101, 87, 67, .16);
+    }
+
+    .current-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.05;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .topic-buttons {
+      flex: 0 0 auto;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ghost-button,
+    .delete-topic {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid var(--line);
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .ghost-button {
+      color: #3f5f67;
+    }
+
+    .delete-topic {
+      color: #8a3d3d;
+      font-size: 20px;
+    }
+
+    .topic-editor {
+      display: grid;
+      gap: 10px;
+    }
+
+    .color-label {
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .palette {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid rgba(34, 37, 42, .12);
+      background: var(--swatch);
+      box-shadow: inset 0 -4px 0 rgba(34, 37, 42, .08);
+    }
+
+    .swatch.active {
+      border-color: rgba(34, 37, 42, .82);
+      box-shadow: 0 0 0 3px rgba(34, 37, 42, .12), inset 0 -4px 0 rgba(34, 37, 42, .08);
+    }
+
+    .latest {
+      min-height: 116px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .7);
+      box-shadow: var(--shadow);
+    }
+
+    .latest time,
+    .entry time {
+      display: block;
+      color: var(--muted);
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .latest p,
+    .entry p {
+      margin: 0;
+      white-space: pre-wrap;
+      line-height: 1.55;
+      font-size: 22px;
+      overflow-wrap: anywhere;
+    }
+
+    .empty {
+      color: var(--muted);
+    }
+
+    .composer {
+      display: grid;
+      gap: 10px;
+    }
+
+    textarea {
+      min-height: 144px;
+      resize: vertical;
+      padding: 14px;
+      line-height: 1.55;
+      font-size: 22px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .compose-buttons {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .save,
+    .cancel {
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 8px;
+      font-size: 19px;
+      font-weight: 850;
+    }
+
+    .save {
+      background: #22252a;
+      color: #fff;
+    }
+
+    .cancel {
+      background: #fff;
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
+    .history-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .history-head h3 {
+      margin: 0;
+      font-size: 23px;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .entries {
+      display: grid;
+      gap: 10px;
+    }
+
+    .entry {
+      padding: 15px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .68);
+      border: 1px solid rgba(101, 87, 67, .15);
+    }
+
+    .entry-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .entry-actions button {
+      min-height: 32px;
+      padding: 0 10px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: #3f5f67;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .entry-actions button.danger {
+      background: #f6e9e7;
+      color: #8a3d3d;
+      border-color: #ecd3d0;
+    }
+
+    .notice {
+      min-height: 22px;
+      color: #4f6b5b;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        background: linear-gradient(180deg, #fffdf8 0%, #f4efe6 100%);
+      }
+
+      .app {
+        display: block;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        padding: 16px 14px 12px;
+        border-right: 0;
+        border-bottom: 1px solid rgba(101, 87, 67, .15);
+      }
+
+      .brand {
+        margin-bottom: 10px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .current-top {
+        align-items: center;
+      }
+
+      .new-topic {
+        margin: 12px 0;
+      }
+
+      .toolbar {
+        margin-bottom: 12px;
+      }
+
+      .topics {
+        display: flex;
+        gap: 9px;
+        overflow-x: auto;
+        padding: 4px 3px 7px;
+        scroll-snap-type: x mandatory;
+      }
+
+      .topic-tab {
+        flex: 0 0 168px;
+        scroll-snap-align: start;
+      }
+
+      main {
+        padding: 22px 14px 34px;
+      }
+
+      .actions {
+        align-items: stretch;
+      }
+
+      .compose-buttons {
+        width: 100%;
+      }
+
+      .save,
+      .cancel {
+        flex: 1;
+      }
+
+      .latest {
+        min-height: 106px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="주제 목록">
+      <div class="brand">
+        <h1>주제 기록장</h1>
+        <div class="count" id="topicCount">0</div>
+      </div>
+
+      <form class="new-topic" id="topicForm">
+        <label class="sr-only" for="topicInput">새 주제</label>
+        <input id="topicInput" autocomplete="off" maxlength="30" placeholder="새 주제">
+        <button class="icon-button" title="주제 추가" aria-label="주제 추가">+</button>
+      </form>
+
+      <div class="toolbar">
+        <button class="tool" id="backupBtn" type="button">백업</button>
+        <button class="tool" id="mergeBtn" type="button">병합</button>
+        <button class="tool" id="loadBtn" type="button">불러오기</button>
+      </div>
+
+      <div class="topics" id="topics"></div>
+    </aside>
+
+    <main>
+      <section class="current" aria-live="polite">
+        <div class="current-top">
+          <h2 id="activeTitle">주제를 골라주세요</h2>
+          <div class="topic-buttons">
+            <button class="ghost-button" id="editTopicBtn" type="button" title="주제 이름 수정" aria-label="주제 이름 수정">✎</button>
+            <button class="delete-topic" id="deleteTopicBtn" type="button" title="주제 삭제" aria-label="주제 삭제">×</button>
+          </div>
+        </div>
+        <div class="topic-editor">
+          <div class="color-label">탭 색 고르기</div>
+          <div class="palette" id="palette" aria-label="탭 색 고르기"></div>
+        </div>
+        <div class="latest" id="latest"></div>
+      </section>
+
+      <section class="composer">
+        <label class="sr-only" for="entryInput">기록 내용</label>
+        <textarea id="entryInput" maxlength="1200" placeholder="오늘 남기고 싶은 한 줄"></textarea>
+        <div class="actions">
+          <div class="notice" id="notice" role="status"></div>
+          <div class="compose-buttons">
+            <button class="cancel" id="cancelEditBtn" type="button" hidden>취소</button>
+            <button class="save" id="saveBtn" type="button">기록하기</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="history-head">
+          <h3>이 주제의 기록</h3>
+          <span class="small" id="entryCount">0개</span>
+        </div>
+        <div class="entries" id="entries"></div>
+      </section>
+    </main>
+  </div>
+
+  <input class="sr-only" id="fileInput" type="file" accept="application/json,.json">
+
+  <script>
+    const STORAGE_KEY = "light-topic-diary-v1";
+    const colors = ["#dceee6", "#f2d8d5", "#efdca4", "#d8e4f2", "#e6ddf0", "#d9ead0", "#f1dfc9", "#f5d6a7", "#d6ecef"];
+
+    const topicForm = document.querySelector("#topicForm");
+    const topicInput = document.querySelector("#topicInput");
+    const topicsEl = document.querySelector("#topics");
+    const topicCountEl = document.querySelector("#topicCount");
+    const activeTitleEl = document.querySelector("#activeTitle");
+    const latestEl = document.querySelector("#latest");
+    const entryInput = document.querySelector("#entryInput");
+    const saveBtn = document.querySelector("#saveBtn");
+    const entriesEl = document.querySelector("#entries");
+    const entryCountEl = document.querySelector("#entryCount");
+    const noticeEl = document.querySelector("#notice");
+    const paletteEl = document.querySelector("#palette");
+    const backupBtn = document.querySelector("#backupBtn");
+    const mergeBtn = document.querySelector("#mergeBtn");
+    const loadBtn = document.querySelector("#loadBtn");
+    const fileInput = document.querySelector("#fileInput");
+    const editTopicBtn = document.querySelector("#editTopicBtn");
+    const deleteTopicBtn = document.querySelector("#deleteTopicBtn");
+    const cancelEditBtn = document.querySelector("#cancelEditBtn");
+
+    let mode = "load";
+    let editingEntryId = null;
+    let data = loadData();
+
+    function uid() {
+      return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+    }
+
+    function nowIso() {
+      return new Date().toISOString();
+    }
+
+    function defaultData() {
+      const topicId = uid();
+      return {
+        activeTopicId: topicId,
+        topics: [
+          {
+            id: topicId,
+            title: "생각",
+            color: colors[0],
+            createdAt: nowIso(),
+            entries: []
+          },
+          {
+            id: uid(),
+            title: "읽은 것",
+            color: colors[1],
+            createdAt: nowIso(),
+            entries: []
+          },
+          {
+            id: uid(),
+            title: "하고 싶은 것",
+            color: colors[2],
+            createdAt: nowIso(),
+            entries: []
+          }
+        ]
+      };
+    }
+
+    function loadData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return defaultData();
+        const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed.topics)) return defaultData();
+        return normalize(parsed);
+      } catch {
+        return defaultData();
+      }
+    }
+
+    function normalize(source) {
+      const topics = source.topics
+        .filter(topic => topic && topic.title)
+        .map((topic, index) => ({
+          id: String(topic.id || uid()),
+          title: String(topic.title).slice(0, 30),
+          color: topic.color || colors[index % colors.length],
+          createdAt: topic.createdAt || nowIso(),
+          entries: Array.isArray(topic.entries)
+            ? topic.entries
+                .filter(entry => entry && entry.text)
+                .map(entry => ({
+                  id: String(entry.id || uid()),
+                  text: String(entry.text).slice(0, 1200),
+                  createdAt: entry.createdAt || nowIso(),
+                  updatedAt: entry.updatedAt || null
+                }))
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            : []
+        }));
+
+      if (topics.length === 0) return defaultData();
+
+      return {
+        activeTopicId: topics.some(topic => topic.id === source.activeTopicId)
+          ? source.activeTopicId
+          : topics[0].id,
+        topics
+      };
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function formatDateTime(value) {
+      return new Intl.DateTimeFormat("ko-KR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(value));
+    }
+
+    function activeTopic() {
+      return data.topics.find(topic => topic.id === data.activeTopicId) || data.topics[0];
+    }
+
+    function flash(message) {
+      noticeEl.textContent = message;
+      clearTimeout(flash.timer);
+      flash.timer = setTimeout(() => {
+        noticeEl.textContent = "";
+      }, 2200);
+    }
+
+    function render() {
+      const current = activeTopic();
+      data.activeTopicId = current.id;
+      topicCountEl.textContent = data.topics.length;
+      activeTitleEl.textContent = current.title;
+      entryInput.disabled = false;
+      saveBtn.disabled = false;
+      deleteTopicBtn.hidden = data.topics.length <= 1;
+      saveBtn.textContent = editingEntryId ? "수정 완료" : "기록하기";
+      cancelEditBtn.hidden = !editingEntryId;
+
+      paletteEl.innerHTML = "";
+      colors.forEach(color => {
+        const swatch = document.createElement("button");
+        swatch.className = `swatch${color === current.color ? " active" : ""}`;
+        swatch.type = "button";
+        swatch.style.setProperty("--swatch", color);
+        swatch.title = "탭 색 바꾸기";
+        swatch.setAttribute("aria-label", "탭 색 바꾸기");
+        swatch.addEventListener("click", () => updateTopicColor(color));
+        paletteEl.append(swatch);
+      });
+
+      topicsEl.innerHTML = "";
+      data.topics.forEach(topic => {
+        const latest = topic.entries[0];
+        const button = document.createElement("button");
+        button.className = `topic-tab${topic.id === current.id ? " active" : ""}`;
+        button.type = "button";
+        button.style.setProperty("--tab-color", topic.color);
+        button.innerHTML = `
+          <span class="topic-name"></span>
+          <span class="topic-meta"></span>
+        `;
+        button.querySelector(".topic-name").textContent = topic.title;
+        button.querySelector(".topic-meta").textContent = latest ? formatDateTime(latest.createdAt) : "아직 기록 없음";
+        button.addEventListener("click", () => {
+          data.activeTopicId = topic.id;
+          editingEntryId = null;
+          entryInput.value = "";
+          saveData();
+          render();
+        });
+        topicsEl.append(button);
+      });
+
+      const latest = current.entries[0];
+      latestEl.innerHTML = "";
+      if (latest) {
+        const time = document.createElement("time");
+        time.dateTime = latest.createdAt;
+        time.textContent = latest.updatedAt
+          ? `${formatDateTime(latest.createdAt)} 작성 · ${formatDateTime(latest.updatedAt)} 수정`
+          : formatDateTime(latest.createdAt);
+        const text = document.createElement("p");
+        text.textContent = latest.text;
+        latestEl.append(time, text);
+      } else {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "아직 기록이 없어요.";
+        latestEl.append(empty);
+      }
+
+      entryCountEl.textContent = `${current.entries.length}개`;
+      entriesEl.innerHTML = "";
+      current.entries.forEach(entry => {
+        const item = document.createElement("article");
+        item.className = "entry";
+        const time = document.createElement("time");
+        time.dateTime = entry.createdAt;
+        time.textContent = entry.updatedAt
+          ? `${formatDateTime(entry.createdAt)} 작성 · ${formatDateTime(entry.updatedAt)} 수정`
+          : formatDateTime(entry.createdAt);
+        const text = document.createElement("p");
+        text.textContent = entry.text;
+        const actions = document.createElement("div");
+        actions.className = "entry-actions";
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.textContent = "수정";
+        edit.addEventListener("click", () => startEditEntry(entry.id));
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "danger";
+        remove.textContent = "삭제";
+        remove.addEventListener("click", () => deleteEntry(entry.id));
+        actions.append(edit, remove);
+        item.append(time, text, actions);
+        entriesEl.append(item);
+      });
+    }
+
+    function addTopic(title) {
+      const trimmed = title.trim();
+      if (!trimmed) return;
+      const topic = {
+        id: uid(),
+        title: trimmed,
+        color: colors[data.topics.length % colors.length],
+        createdAt: nowIso(),
+        entries: []
+      };
+      data.topics.unshift(topic);
+      data.activeTopicId = topic.id;
+      saveData();
+      render();
+      flash("주제를 만들었어요.");
+    }
+
+    function editTopic() {
+      const topic = activeTopic();
+      const nextTitle = prompt("주제 이름을 어떻게 바꿀까요?", topic.title);
+      if (nextTitle === null) return;
+      const trimmed = nextTitle.trim().slice(0, 30);
+      if (!trimmed) {
+        flash("주제 이름을 적어주세요.");
+        return;
+      }
+      topic.title = trimmed;
+      saveData();
+      render();
+      flash("주제 이름을 바꿨어요.");
+    }
+
+    function updateTopicColor(color) {
+      const topic = activeTopic();
+      topic.color = color;
+      saveData();
+      render();
+      flash("탭 색을 바꿨어요.");
+    }
+
+    function addEntry() {
+      const text = entryInput.value.trim();
+      if (!text) {
+        flash("내용을 먼저 적어주세요.");
+        return;
+      }
+      const topic = activeTopic();
+      if (editingEntryId) {
+        const entry = topic.entries.find(item => item.id === editingEntryId);
+        if (!entry) {
+          cancelEdit();
+          flash("수정할 기록을 찾지 못했어요.");
+          return;
+        }
+        entry.text = text;
+        entry.updatedAt = nowIso();
+        editingEntryId = null;
+        entryInput.value = "";
+        saveData();
+        render();
+        flash("기록을 수정했어요.");
+        return;
+      }
+
+      topic.entries.unshift({
+        id: uid(),
+        text,
+        createdAt: nowIso(),
+        updatedAt: null
+      });
+      entryInput.value = "";
+      saveData();
+      render();
+      flash("기록했어요.");
+    }
+
+    function startEditEntry(entryId) {
+      const topic = activeTopic();
+      const entry = topic.entries.find(item => item.id === entryId);
+      if (!entry) return;
+      editingEntryId = entryId;
+      entryInput.value = entry.text;
+      entryInput.focus();
+      render();
+      flash("아래 입력칸에서 수정하세요.");
+    }
+
+    function cancelEdit() {
+      editingEntryId = null;
+      entryInput.value = "";
+      render();
+      flash("수정을 취소했어요.");
+    }
+
+    function deleteEntry(entryId) {
+      const topic = activeTopic();
+      if (!confirm("이 기록을 삭제할까요?")) return;
+      topic.entries = topic.entries.filter(entry => entry.id !== entryId);
+      if (editingEntryId === entryId) {
+        editingEntryId = null;
+        entryInput.value = "";
+      }
+      saveData();
+      render();
+      flash("기록을 삭제했어요.");
+    }
+
+    function deleteTopic() {
+      const topic = activeTopic();
+      if (data.topics.length <= 1) return;
+      if (!confirm(`'${topic.title}' 주제를 삭제할까요?`)) return;
+      data.topics = data.topics.filter(item => item.id !== topic.id);
+      data.activeTopicId = data.topics[0].id;
+      editingEntryId = null;
+      entryInput.value = "";
+      saveData();
+      render();
+      flash("주제를 삭제했어요.");
+    }
+
+    function backup() {
+      const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `주제 백업_phone.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      flash("백업 파일을 만들었어요.");
+    }
+
+    function importFile(nextMode) {
+      mode = nextMode;
+      fileInput.value = "";
+      fileInput.click();
+    }
+
+    function mergeData(incoming) {
+      const normalized = normalize(incoming);
+      const byTitle = new Map(data.topics.map(topic => [topic.title, topic]));
+
+      normalized.topics.forEach(topic => {
+        const existing = byTitle.get(topic.title);
+        if (!existing) {
+          data.topics.push(topic);
+          byTitle.set(topic.title, topic);
+          return;
+        }
+
+        const seen = new Set(existing.entries.map(entry => `${entry.createdAt}|${entry.text}`));
+        topic.entries.forEach(entry => {
+          const key = `${entry.createdAt}|${entry.text}`;
+          if (!seen.has(key)) {
+            existing.entries.push(entry);
+            seen.add(key);
+          }
+        });
+        existing.entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      });
+    }
+
+    topicForm.addEventListener("submit", event => {
+      event.preventDefault();
+      addTopic(topicInput.value);
+      topicInput.value = "";
+    });
+
+    saveBtn.addEventListener("click", addEntry);
+    editTopicBtn.addEventListener("click", editTopic);
+    deleteTopicBtn.addEventListener("click", deleteTopic);
+    cancelEditBtn.addEventListener("click", cancelEdit);
+    backupBtn.addEventListener("click", backup);
+    mergeBtn.addEventListener("click", () => importFile("merge"));
+    loadBtn.addEventListener("click", () => importFile("load"));
+
+    entryInput.addEventListener("keydown", event => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        addEntry();
+      }
+    });
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      try {
+        const incoming = JSON.parse(await file.text());
+        if (mode === "merge") {
+          mergeData(incoming);
+          flash("백업을 병합했어요.");
+        } else {
+          data = normalize(incoming);
+          flash("백업을 불러왔어요.");
+        }
+        saveData();
+        render();
+      } catch {
+        flash("읽을 수 없는 파일이에요.");
+      }
+    });
+
+    saveData();
+    render();
+  </script>
+</body>
+</html>
